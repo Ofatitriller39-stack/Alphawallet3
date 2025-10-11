@@ -38,6 +38,8 @@
     align-items:center;
     min-height:100vh;
     padding-bottom:40px;
+    /* ensure pointer events are allowed */
+    pointer-events: auto;
   }
 
   /* header */
@@ -161,7 +163,6 @@
     font-weight:800;
     will-change:top,opacity;
   }
-  /* show below the fixed header (account for safe-area too) */
   .topAlert.show{
     top: calc(var(--header-h) + env(safe-area-inset-top, 0px) + 10px);
     opacity:1;
@@ -503,16 +504,492 @@ let current = JSON.parse(localStorage.getItem('alphawallet_current') || 'null');
 const ADMIN_EMAIL = 'alphawalllet@gmail.com';
 const ADMIN_PASSWORD = 'admin123';
 
-/* -------------- Supabase client (URL + anon key you gave) -------------- */
+/* -------------- Supabase client (URL + publishable key you gave) -------------- */
 const SUPABASE_URL = 'https://nwccrgsrkormjbfpkydk.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_9O13SsMOXT-pv9-s4eNdnQ_59j90-nL';
+const SUPABASE_KEY = 'sb_publishable_9O13SsMOXT-pv9-s4eNdnQ_59j90-nL';
 
-const supabaseClient = (typeof supabase !== 'undefined' && supabase) ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+/* create a single supabase client instance */
+const supabaseClient = (typeof supabase !== 'undefined' && supabase) ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 if (!supabaseClient) console.warn('Supabase unavailable or script failed to load. App will still work locally.');
 
-/* -------------- helpers & logic (unchanged from your original) -------------- */
-// ... rest of your logic code remains the same as in your original file ...
+/* -------------- helpers -------------- */
+const el = id => document.getElementById(id);
+const show = e => e && (e.style.display = 'block');
+const hide = e => e && (e.style.display = 'none');
+const saveAll = ()=>{ localStorage.setItem(STORAGE_KEY, JSON.stringify(users)); if(current) localStorage.setItem('alphawallet_current', JSON.stringify(current)); else localStorage.removeItem('alphawallet_current'); };
 
+function zeroBal(){ return { USD:0.00, EUR:0.00, GBP:0.00 }; }
+function genWallet(){ return 'AW-' + Math.random().toString(36).slice(2,11).toUpperCase(); }
+function now(){ return new Date().toISOString(); }
+function prettyDT(iso){ try { return new Date(iso).toLocaleString(); } catch(e){ return iso } }
+
+/* -------------- DOM refs -------------- */
+const loginHeaderBtn = el('loginHeaderBtn');
+const logoutHeaderBtn = el('logoutHeaderBtn');
+const tabLogin = el('tabLogin'), tabRegister = el('tabRegister');
+const loginBox = el('loginBox'), registerBox = el('registerBox');
+const btnLogin = el('btnLogin'), btnRegister = el('btnRegister'), btnRegBack = el('btnRegBack');
+const loginSpinner = el('loginSpinner');
+
+const authSection = el('authSection');
+const dashboardSection = el('dashboardSection');
+const adminSection = el('adminSection');
+
+const balUSD = el('balUSD'), balEUR = el('balEUR'), balGBP = el('balGBP');
+const userWelcome = el('userWelcome'), userEmailDisplay = el('userEmailDisplay');
+const txBody = el('txBody');
+
+const topAlert = el('topAlert'), topAlertText = el('topAlertText'), topAlertSub = el('topAlertSub'), topAlertClose = el('topAlertClose');
+
+const tileReceive = el('tileReceive'), tileTransfer = el('tileTransfer'), tilePay = el('tilePay'), tileHistory = el('tileHistory');
+const tileLoan = el('tileLoan'), tileInvest = el('tileInvest'), tileProfile = el('tileProfile'), tileTravel = el('tileTravel');
+const tileLogout = el('tileLogout');
+
+const modalBackdrop = el('modalBackdrop'), modalTitle = el('modalTitle'), modalBody = el('modalBody'), modalClose = el('modalClose');
+
+const adminUserList = el('adminUserList'), adminRecipient = el('adminRecipient'), adminAmount = el('adminAmount');
+const adminCurrency = el('adminCurrency'), adminSender = el('adminSender'), adminNote = el('adminNote');
+const adminCredit = el('adminCredit'), adminDebit = el('adminDebit'), adminLogout = el('adminLogout');
+
+const btnCardToggle = el('btnCardToggle');
+const vcStatus = el('vcStatus');
+
+/* -------------- top alert helper -------------- */
+function showTopAlert(text, sub='', type='info'){
+  topAlertText.innerText = text;
+  topAlertSub.innerText = sub || '';
+  topAlert.classList.remove('info','success','error');
+  topAlert.classList.add(type);
+  topAlert.classList.add('show');
+  clearTimeout(showTopAlert._t);
+  showTopAlert._t = setTimeout(()=>{ topAlert.classList.remove('show'); }, 5000);
+}
+topAlertClose.addEventListener('click', ()=> topAlert.classList.remove('show'));
+
+/* -------------- Tab handlers -------------- */
+tabLogin.addEventListener('click', ()=>{ tabLogin.classList.add('active'); tabRegister.classList.remove('active'); show(loginBox); hide(registerBox); });
+tabRegister.addEventListener('click', ()=>{ tabRegister.classList.add('active'); tabLogin.classList.remove('active'); show(registerBox); hide(loginBox); });
+btnRegBack.addEventListener('click', ()=>{ tabLogin.click(); });
+
+/* -------------- Registration -------------- */
+btnRegister.addEventListener('click', async () => {
+  const first = el('regFirst').value.trim();
+  const last = el('regLast').value.trim();
+  const dob = el('regDOB').value;
+  const addr = el('regAddress').value.trim();
+  const email = el('regEmail').value.trim().toLowerCase();
+  const pw = el('regPassword').value;
+  const pw2 = el('regPassword2').value;
+
+  if(!first||!last||!dob||!addr||!email||!pw||!pw2) { showTopAlert('Please fill all fields', '', 'error'); return; }
+  if(pw !== pw2) { showTopAlert('Passwords do not match', '', 'error'); return; }
+  if(!/\S+@\S+\.\S+/.test(email)) { showTopAlert('Enter a valid email', '', 'error'); return; }
+  if(users[email]) { showTopAlert('Account already exists with that email', '', 'error'); return; }
+
+  const wallet = genWallet();
+  users[email] = {
+    first, last, fullName: first + ' ' + last,
+    dob, address: addr, email,
+    password: pw,
+    tier: 1,
+    balances: zeroBal(),
+    transactions: [],
+    wallet,
+    cardLast4: (''+Math.floor(1000+Math.random()*9000)),
+    cardExpiry: '12/28',
+    cardActivated: false,
+    role: 'user',
+    createdAt: now()
+  };
+
+  // Best-effort cloud save
+  if (supabaseClient) {
+    try {
+      await supabaseClient.from('users').insert([{
+        first, last, dob, address: addr, email, password: pw, tier: 1, wallet, card_last4: users[email].cardLast4, card_expiry: users[email].cardExpiry, created_at: new Date().toISOString()
+      }]);
+      showTopAlert('Account created and saved to cloud', 'You can now log in from other devices.', 'success');
+    } catch(e){
+      console.warn('Supabase insert failed:', e);
+      showTopAlert('Account created locally — cloud save failed', 'Saved locally.', 'error');
+    }
+  } else {
+    showTopAlert('Account created locally', 'Supabase unavailable.', 'info');
+  }
+
+  saveAll();
+  tabLogin.click();
+});
+
+/* -------------- Login -------------- */
+btnLogin.addEventListener('click', async ()=>{
+  const email = el('loginEmail').value.trim().toLowerCase();
+  const pw = el('loginPassword').value;
+  if(!email||!pw) { showTopAlert('Enter email and password', '', 'error'); return; }
+
+  loginSpinner.style.display = 'inline-block';
+  await new Promise(r=>setTimeout(r,300));
+  loginSpinner.style.display = 'none';
+
+  // admin login
+  if(email === ADMIN_EMAIL && pw === ADMIN_PASSWORD){
+    current = { email: ADMIN_EMAIL, role: 'admin' };
+    saveAll();
+    openAdmin();
+    return;
+  }
+
+  const u = users[email];
+  if(!u || u.password !== pw){
+    // try remote verification (best-effort)
+    if (supabaseClient) {
+      try {
+        const signIn = await supabaseClient.auth.signInWithPassword({ email, password: pw }).catch(()=>null);
+        if (signIn && !signIn.error) {
+          // fetch profile
+          const { data: profile } = await supabaseClient.from('users').select('*').eq('email', email).limit(1).single().catch(()=>({ data:null }));
+          if (profile) {
+            users[email] = users[email] || {};
+            users[email].email = profile.email;
+            users[email].first = profile.first || '';
+            users[email].last = profile.last || '';
+            users[email].fullName = (profile.first||'') + ' ' + (profile.last||'');
+            users[email].password = pw;
+            users[email].balances = users[email].balances || zeroBal();
+            users[email].transactions = users[email].transactions || [];
+            users[email].wallet = profile.wallet || users[email].wallet || genWallet();
+            users[email].cardLast4 = profile.card_last4 || users[email].cardLast4 || '0000';
+            users[email].cardExpiry = profile.card_expiry || users[email].cardExpiry || '12/28';
+            users[email].role = 'user';
+            users[email].createdAt = profile.created_at || now();
+            saveAll();
+          }
+        } else {
+          // try to read profile row and adopt entered password (can't truly verify)
+          const { data } = await supabaseClient.from('users').select('*').eq('email', email).limit(1).single().catch(()=>({ data:null }));
+          if (data) {
+            users[email] = users[email] || {};
+            users[email].email = data.email;
+            users[email].first = data.first || '';
+            users[email].last = data.last || '';
+            users[email].fullName = (data.first||'') + ' ' + (data.last||'');
+            users[email].password = pw;
+            users[email].balances = users[email].balances || zeroBal();
+            users[email].transactions = users[email].transactions || [];
+            users[email].wallet = data.wallet || users[email].wallet || genWallet();
+            saveAll();
+          } else {
+            showTopAlert('Invalid credentials', '', 'error');
+            return;
+          }
+        }
+      } catch(e){
+        console.warn('Supabase login/verify error (non-blocking):', e);
+      }
+    } else {
+      // no supabase: fall back to local only
+    }
+  }
+
+  const user = users[email];
+  if(!user || user.password !== pw) { showTopAlert('Invalid credentials', '', 'error'); return; }
+
+  current = { email, role: 'user' };
+  saveAll();
+  openDashboard();
+});
+
+/* header buttons */
+loginHeaderBtn.addEventListener('click', ()=> { window.scrollTo({top:0,behavior:'smooth'}); tabLogin.click(); });
+logoutHeaderBtn.addEventListener('click', doLogout);
+
+/* -------------- open dashboard/admin -------------- */
+function openDashboard(){
+  hide(authSection); hide(adminSection); show(dashboardSection);
+  topAlert.classList.remove('show');
+  loginHeaderBtn.style.display = 'none';
+  logoutHeaderBtn.style.display = 'inline-block';
+
+  const u = users[current.email];
+  if(!u) { showTopAlert('User not found', '', 'error'); doLogout(); return; }
+  userWelcome.innerText = u.fullName || (u.email?u.email.split('@')[0]:'User');
+  userEmailDisplay.innerText = u.email;
+  el('displayTier').innerText = (u.tier||1);
+
+  balUSD.innerText = Number(u.balances.USD||0).toFixed(2);
+  balEUR.innerText = Number(u.balances.EUR||0).toFixed(2);
+  balGBP.innerText = Number(u.balances.GBP||0).toFixed(2);
+
+  renderTxs(u.transactions || []);
+
+  el('vcHolder').innerText = u.fullName || u.email;
+  el('vcNumber').innerText = '**** **** **** ' + (u.cardLast4||'0000');
+  el('vcExpiry').innerText = u.cardExpiry || '--/--';
+  vcStatus.innerText = u.cardActivated ? 'ACTIVATED' : 'NOT ACTIVATED';
+}
+
+/* -------------- render transactions -------------- */
+function renderTxs(txs){
+  txBody.innerHTML = '';
+  if(!txs || txs.length === 0){
+    txBody.innerHTML = `<tr><td colspan="5" class="muted center">No transactions yet.</td></tr>`;
+    return;
+  }
+  txs.slice(0,50).forEach(tx=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${prettyDT(tx.time)}</td>
+      <td>${tx.desc||tx.type||''}</td>
+      <td>${(tx.before||0).toFixed(2)} ${tx.currency||''}</td>
+      <td>${(tx.after||0).toFixed(2)} ${tx.currency||''}</td>
+      <td style="font-weight:900">${tx.amount>=0?'+':'-'} ${(Math.abs(tx.amount)).toFixed(2)} ${tx.currency||''}</td>`;
+    txBody.appendChild(tr);
+  });
+}
+
+/* -------------- tiles actions -------------- */
+tileReceive.addEventListener('click', ()=>{
+  if(!current) return showTopAlert('Login required', '', 'error');
+  if(current.role === 'admin'){ showModal('Admin cannot receive'); return; }
+  const u = users[current.email];
+  showModal('Your wallet address', `Wallet: ${u.wallet}\n\nShare this address to receive funds.`);
+});
+
+tileTransfer.addEventListener('click', ()=>{
+  if(!current) return showTopAlert('Login required', '', 'error');
+  const providers = [
+    {name:'Chase', logo:'🏦'}, {name:'Bank of America', logo:'🏛️'}, {name:'Citi', logo:'🏛️'},
+    {name:'HSBC', logo:'🌍'}, {name:'Barclays', logo:'🏦'}, {name:'PayPal', logo:'💳'},
+    {name:'Zelle', logo:'⚡'}, {name:'Apple Pay', logo:'🍎'}, {name:'Western Union', logo:'🌐'},
+    {name:'TransferWise', logo:'💱'}, {name:'Revolut', logo:'💠'}, {name:'SWIFT', logo:'✈️'}
+  ];
+  let body = 'Select a provider to send funds:\n\n';
+  providers.forEach((p,i)=> body += `${i+1}. ${p.logo}  ${p.name}\n`);
+  body += `\n(Selecting any provider will show contact support message)`;
+  showModal('Transfer Providers', body, ()=>{
+    const list = providers.map(p=>`<button class="secondary" style="margin:6px">${p.logo} ${p.name}</button>`).join('');
+    modalBody.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:6px">'+list+'</div>';
+    modalBody.querySelectorAll('button').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        showTopAlert('Account has been restricted — please contact Customer Support', `Email: alphawalllet@gmail.com • WhatsApp: +1 (647) 589-7303`, 'error');
+        closeModal();
+      });
+    });
+  });
+});
+
+tilePay.addEventListener('click', ()=>{
+  if(!current) return showTopAlert('Login required', '', 'error');
+  const billers = ['Electricity','Water','Internet','Cable TV','Rent','Mobile Top-up','Subscriptions'];
+  showModal('Pay Bills', billers.map((b,i)=>`${i+1}. ${b}`).join('\n') + '\n\nContact support to complete payments.');
+});
+
+tileHistory.addEventListener('click', ()=>{
+  if(!current) return showTopAlert('Login required', '', 'error');
+  const u = users[current.email];
+  if(!u.transactions || u.transactions.length === 0) return showModal('Transaction History', 'No transactions yet.');
+  const rows = u.transactions.map(t=> `${prettyDT(t.time)} • ${t.desc||t.type} • ${t.amount>=0?'+':'-'}${Math.abs(t.amount).toFixed(2)} ${t.currency || ''}`).join('\n');
+  showModal('Transaction History', rows);
+});
+
+tileLoan.addEventListener('click', ()=>{ if(!current) return showTopAlert('Login required', '', 'error'); showTopAlert('Please keep making more transactions to be eligible for loan services', '', 'info'); });
+tileInvest.addEventListener('click', ()=>{ if(!current) return showTopAlert('Login required', '', 'error'); showModal('Investments', 'Starter investment plans:\n\n1) Stable Saver — low risk\n2) Growth Starter — medium risk\n3) Opportunity — higher risk\n\n(Coming soon)'); });
+tileProfile.addEventListener('click', ()=>{ if(!current) return showTopAlert('Login required', '', 'error'); const u = users[current.email]; showModal('Profile Details', `Name: ${u.fullName}\nEmail: ${u.email}\nDOB: ${u.dob}\nAddress: ${u.address}\nWallet: ${u.wallet}\nCreated: ${prettyDT(u.createdAt)}`); });
+tileTravel.addEventListener('click', ()=>{ showModal('Travel & Taxi', 'Search flights and book taxis. Contact support to complete bookings.'); });
+tileLogout.addEventListener('click', ()=> doLogout());
+
+/* card toggle */
+btnCardToggle && btnCardToggle.addEventListener('click', ()=>{
+  if(!current) return showTopAlert('Login required', '', 'error');
+  const u = users[current.email];
+  u.cardActivated = !u.cardActivated;
+  saveAll();
+  openDashboard();
+});
+
+/* modal helpers */
+function showModal(title, body, onOpen){
+  modalTitle.innerText = title;
+  modalBody.innerHTML = `<pre style="white-space:pre-wrap">${body}</pre>`;
+  modalBackdrop.style.display = 'flex';
+  modalBackdrop.setAttribute('aria-hidden','false');
+  if(onOpen) onOpen();
+  setTimeout(()=> document.querySelector('.modal')?.scrollIntoView({behavior:'smooth', block:'center'}), 50);
+}
+function closeModal(){ modalBackdrop.style.display = 'none'; modalBackdrop.setAttribute('aria-hidden','true'); }
+modalClose.addEventListener('click', closeModal);
+modalBackdrop.addEventListener('click', (e)=> { if(e.target === modalBackdrop) closeModal(); });
+
+/* -------------- admin functions (simplified) -------------- */
+async function openAdmin(){
+  hide(authSection); hide(dashboardSection); show(adminSection);
+  loginHeaderBtn.style.display = 'none';
+  logoutHeaderBtn.style.display = 'inline-block';
+  await renderAdminUserList();
+}
+
+async function renderAdminUserList(){
+  adminUserList.innerHTML = '<div class="muted">Loading users…</div>';
+  try {
+    if (!supabaseClient) throw new Error('supabase unavailable');
+    const { data, error } = await supabaseClient.from('users').select('*').order('created_at', { ascending: false }).limit(100);
+    if(error) throw error;
+    adminUserList.innerHTML = '';
+    if(!data || data.length === 0){ renderAdminUsersFromLocal(Object.keys(users)); return; }
+    data.forEach(rec=>{
+      const node = document.createElement('div');
+      node.style.padding='8px';
+      node.style.borderBottom='1px solid #eef6ff';
+      node.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:800">${(rec.first||'')+' '+(rec.last||'')}</div>
+            <div class="muted small">${rec.email || ''}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:900">${(rec.balance_usd!==undefined?Number(rec.balance_usd).toFixed(2):(users[rec.email]?.balances?.USD||0).toFixed(2))} $</div>
+            <div class="muted small">${rec.wallet || ''}</div>
+          </div>
+        </div>`;
+      node.addEventListener('click', ()=> { adminRecipient.value = rec.email || ''; });
+      adminUserList.appendChild(node);
+    });
+  } catch(e){
+    console.warn('Error rendering admin list (falling back to local):', e);
+    renderAdminUsersFromLocal(Object.keys(users));
+  }
+}
+
+function renderAdminUsersFromLocal(keys){
+  adminUserList.innerHTML = '';
+  if(!keys || keys.length === 0){ adminUserList.innerHTML = '<div class="muted">No registered users.</div>'; return; }
+  keys.forEach(email=>{
+    const u = users[email];
+    if(!u) return;
+    const node = document.createElement('div');
+    node.style.padding='8px';
+    node.style.borderBottom='1px solid #eef6ff';
+    node.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:800">${u.fullName}</div>
+          <div class="muted small">${u.email}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:900">${(u.balances.USD||0).toFixed(2)} $</div>
+          <div class="muted small">${u.wallet}</div>
+        </div>
+      </div>`;
+    node.addEventListener('click', ()=> { adminRecipient.value = u.email; });
+    adminUserList.appendChild(node);
+  });
+}
+
+/* admin credit / debit actions (same behavior) */
+adminCredit.addEventListener('click', async ()=>{
+  const rec = adminRecipient.value.trim().toLowerCase();
+  const amt = parseFloat(adminAmount.value);
+  const cur = adminCurrency.value;
+  const sender = adminSender.value.trim() || 'Admin';
+  const note = adminNote.value.trim() || 'Admin credit';
+  if(!rec) return showTopAlert('Enter recipient email.', '', 'error');
+  if(isNaN(amt) || amt <= 0) return showTopAlert('Enter valid amount', '', 'error');
+
+  if(!users[rec]){
+    try{
+      if (supabaseClient) {
+        const { data } = await supabaseClient.from('users').select('*').eq('email', rec).limit(1).single();
+        if(data){
+          users[rec] = users[rec] || {};
+          users[rec].email = data.email;
+          users[rec].first = data.first || '';
+          users[rec].last = data.last || '';
+          users[rec].fullName = (data.first||'')+' '+(data.last||'');
+          users[rec].balances = users[rec].balances || zeroBal();
+          users[rec].wallet = data.wallet || genWallet();
+          users[rec].transactions = users[rec].transactions || [];
+          users[rec].createdAt = data.created_at || now();
+        }
+      }
+    } catch(e){ console.warn('Could not fetch user from Supabase for credit', e); }
+  }
+  if(!users[rec]) return showTopAlert('Recipient not found locally or remotely. Make sure email is correct.', '', 'error');
+
+  const before = users[rec].balances[cur] || 0;
+  users[rec].balances[cur] = Number(before) + Number(amt);
+  users[rec].transactions.unshift({ time: now(), type: 'Admin Credit', desc: note, amount: amt, currency: cur, before: before, after: users[rec].balances[cur], sender });
+
+  try {
+    if (supabaseClient) {
+      const column = (cur === 'USD') ? 'balance_usd' : (cur === 'EUR') ? 'balance_eur' : 'balance_gbp';
+      const updateData = {}; updateData[column] = users[rec].balances[cur];
+      const { error } = await supabaseClient.from('users').update(updateData).eq('email', rec);
+      if(error) console.warn('Supabase update error:', error);
+    }
+  } catch(e){ console.warn('Supabase update failed', e); }
+
+  saveAll();
+  await renderAdminUserList();
+  showTopAlert('Account credited', `${amt.toFixed(2)} ${cur} to ${rec}`, 'success');
+  if(current && current.email === rec) renderTxs(users[rec].transactions);
+});
+
+adminDebit.addEventListener('click', async ()=>{
+  const rec = adminRecipient.value.trim().toLowerCase();
+  const amt = parseFloat(adminAmount.value);
+  const cur = adminCurrency.value;
+  const sender = adminSender.value.trim() || 'Admin';
+  const note = adminNote.value.trim() || 'Admin debit';
+  if(!rec) return showTopAlert('Enter recipient email.', '', 'error');
+  if(isNaN(amt) || amt <= 0) return showTopAlert('Enter valid amount', '', 'error');
+
+  if(!users[rec]) return showTopAlert('Recipient not found locally. Click a user from the list to populate the email field.', '', 'error');
+
+  const before = users[rec].balances[cur] || 0;
+  if(before < amt) return showTopAlert('Insufficient balance for the user.', '', 'error');
+
+  users[rec].balances[cur] = Number(before) - Number(amt);
+  users[rec].transactions.unshift({ time: now(), type: 'Admin Debit', desc: note, amount: -amt, currency: cur, before: before, after: users[rec].balances[cur], sender });
+
+  try {
+    if (supabaseClient) {
+      const column = (cur === 'USD') ? 'balance_usd' : (cur === 'EUR') ? 'balance_eur' : 'balance_gbp';
+      const updateData = {}; updateData[column] = users[rec].balances[cur];
+      const { error } = await supabaseClient.from('users').update(updateData).eq('email', rec);
+      if(error) console.warn('Supabase update error:', error);
+    }
+  } catch(e){ console.warn('Supabase update failed', e); }
+
+  saveAll();
+  await renderAdminUserList();
+  showTopAlert('Account debited', `${amt.toFixed(2)} ${cur} from ${rec}`, 'info');
+  if(current && current.email === rec) renderTxs(users[rec].transactions);
+});
+
+adminLogout.addEventListener('click', ()=> doLogout());
+
+/* logout */
+function doLogout(){
+  current = null;
+  saveAll();
+  show(authSection);
+  hide(dashboardSection);
+  hide(adminSection);
+  loginHeaderBtn.style.display = 'inline-block';
+  logoutHeaderBtn.style.display = 'none';
+  tabLogin.click();
+}
+
+/* boot logic */
+(function boot(){
+  try{
+    if(!users[ADMIN_EMAIL]) {
+      users[ADMIN_EMAIL] = { fullName:'AlphaWallet Admin', email: ADMIN_EMAIL, password: ADMIN_PASSWORD, balances: zeroBal(), transactions: [], wallet: genWallet(), role:'admin', createdAt: now() };
+      saveAll();
+    }
+
+    if(current && current.email === ADMIN_EMAIL && current.role === 'admin'){ openAdmin(); return; }
+    if(current && current.email && users[current.email]){ openDashboard(); return; }
+  }catch(e){ console.warn('boot error', e); }
+  tabLogin.click();
+})();
 </script>
 </body>
 </html>
