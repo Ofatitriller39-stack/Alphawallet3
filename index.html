@@ -1029,6 +1029,17 @@ function openAdmin() {
 }
 // 👆 End admin panel view function
 }
+  // 👇 Boot logic to enable buttons
+(function boot() {
+  try {
+    // Make sure login and register buttons are clickable
+    tabLogin?.addEventListener('click', () => show(authSection));
+    tabRegister?.addEventListener('click', () => show(authSection));
+    console.log('✅ Boot initialized - buttons active');
+  } catch (e) {
+    console.error('Boot error:', e);
+  }
+})();
 </script>
 </body>
 </html>
