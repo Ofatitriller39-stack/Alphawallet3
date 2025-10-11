@@ -621,24 +621,57 @@ btnRegister.addEventListener('click', async () => {
   tabLogin.click();
 });
 
-/* -------------- Login -------------- */
-btnLogin.addEventListener('click', async ()=>{
-  const email = el('loginEmail').value.trim().toLowerCase();
-  const pw = el('loginPassword').value;
-  if(!email||!pw) { showTopAlert('Enter email and password', '', 'error'); return; }
+/* ---------------- Login ---------------- */
+btnLogin.addEventListener('click', async () => {
+  const email = el('loginEmail').value.trim();
+  const pw = el('loginPassword').value.trim();
 
-  loginSpinner.style.display = 'inline-block';
-  await new Promise(r=>setTimeout(r,300));
-  loginSpinner.style.display = 'none';
-
-  // admin login
-  if(email === ADMIN_EMAIL && pw === ADMIN_PASSWORD){
-    current = { email: ADMIN_EMAIL, role: 'admin' };
-    saveAll();
-    openAdmin();
+  if (!email || !pw) {
+    showTopAlert('Enter both email and password.');
     return;
   }
 
+  loginSpinner.style.display = 'inline-block';
+  await new Promise(r => setTimeout(r, 300));
+  loginSpinner.style.display = 'none';
+
+  // Admin login
+  if (email === ADMIN_EMAIL && pw === ADMIN_PASSWORD) {
+    current = { email: ADMIN_EMAIL, role: 'admin' };
+    saveAll();
+    openAdmin();
+
+    // Fetch all users from Supabase
+    if (supabaseClient) {
+      try {
+        const { data, error } = await supabaseClient.from('users').select('*');
+        if (error) {
+          console.error('Error fetching users:', error);
+          showTopAlert('Could not load user data.');
+        } else {
+          console.log('All users:', data);
+          renderAdminUsers(data); // display users in admin dashboard
+        }
+      } catch (err) {
+        console.error('Fetch failed:', err);
+        showTopAlert('Network error while fetching users.');
+      }
+    }
+
+    return;
+  }
+
+  // Normal user login
+  const u = users[email];
+  if (!u || u.password !== pw) {
+    showTopAlert('Invalid email or password.');
+    return;
+  }
+
+  current = u;
+  saveAll();
+  openDashboard();
+});
   const u = users[email];
   if(!u || u.password !== pw){
     // try remote verification (best-effort)
@@ -975,6 +1008,26 @@ function doLogout(){
   loginHeaderBtn.style.display = 'inline-block';
   logoutHeaderBtn.style.display = 'none';
   tabLogin.click();
+  // 👇 Admin panel view function
+function openAdmin() {
+  try {
+    // Hide other sections
+    hide(dashboardSection);
+    hide(authSection);
+    // Show admin section
+    show(adminSection);
+
+    // Render all users in the admin table
+    if (typeof renderAdminUsers === "function") {
+      renderAdminUsers(Object.values(users));
+    } else {
+      console.warn("renderAdminUsers function not found");
+    }
+  } catch (e) {
+    console.error("Error opening admin panel:", e);
+  }
+}
+// 👆 End admin panel view function
 }
 
 /* boot logic */
@@ -990,6 +1043,19 @@ function doLogout(){
   }catch(e){ console.warn('boot error', e); }
   tabLogin.click();
 })();
+  // Helper function to show users in admin table
+function renderAdminUsers(users) {
+  const adminTable = document.getElementById('adminUserTable');
+  if (!adminTable) return;
+  adminTable.innerHTML = users.map(u => `
+    <tr>
+      <td>${u.fullName || (u.first + ' ' + u.last)}</td>
+      <td>${u.email}</td>
+      <td>${u.tier || ''}</td>
+      <td>${u.createdAt || ''}</td>
+    </tr>
+  `).join('');
+}
 </script>
 </body>
 </html>
