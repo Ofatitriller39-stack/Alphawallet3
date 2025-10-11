@@ -1029,33 +1029,6 @@ function openAdmin() {
 }
 // 👆 End admin panel view function
 }
-
-/* boot logic */
-(function boot(){
-  try{
-    if(!users[ADMIN_EMAIL]) {
-      users[ADMIN_EMAIL] = { fullName:'AlphaWallet Admin', email: ADMIN_EMAIL, password: ADMIN_PASSWORD, balances: zeroBal(), transactions: [], wallet: genWallet(), role:'admin', createdAt: now() };
-      saveAll();
-    }
-
-    if(current && current.email === ADMIN_EMAIL && current.role === 'admin'){ openAdmin(); return; }
-    if(current && current.email && users[current.email]){ openDashboard(); return; }
-  }catch(e){ console.warn('boot error', e); }
-  tabLogin.click();
-})();
-  // Helper function to show users in admin table
-function renderAdminUsers(users) {
-  const adminTable = document.getElementById('adminUserTable');
-  if (!adminTable) return;
-  adminTable.innerHTML = users.map(u => `
-    <tr>
-      <td>${u.fullName || (u.first + ' ' + u.last)}</td>
-      <td>${u.email}</td>
-      <td>${u.tier || ''}</td>
-      <td>${u.createdAt || ''}</td>
-    </tr>
-  `).join('');
-}
 </script>
 </body>
 </html>
