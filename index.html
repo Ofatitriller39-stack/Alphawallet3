@@ -999,6 +999,27 @@ adminDebit.addEventListener('click', async ()=>{
 adminLogout.addEventListener('click', ()=> doLogout());
 
 /* logout */
+  // ✅ Show Login Form
+function showLogin() {
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  if (loginForm && registerForm) {
+    loginForm.style.display = 'block';
+    registerForm.style.display = 'none';
+  }
+  console.log("Showing Login Form");
+}
+
+// ✅ Show Register Form
+function showRegister() {
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  if (loginForm && registerForm) {
+    loginForm.style.display = 'none';
+    registerForm.style.display = 'block';
+  }
+  console.log("Showing Register Form");
+}
 function doLogout(){
   current = null;
   saveAll();
@@ -1039,7 +1060,31 @@ function openAdmin() {
   } catch (e) {
     console.error('Boot error:', e);
   }
-})();
+  // ✅ Add click listeners for switching between Login and Register tabs
+const tabLogin = document.getElementById('tabLogin');
+const tabRegister = document.getElementById('tabRegister');
+
+// 👇 Boot logic to enable buttons
+(function boot() {
+  try {
+    // Make sure login and register buttons respond
+    tabLogin?.addEventListener('click', () => {
+      console.log('✅ Login button clicked');
+      showLogin();
+    });
+
+    tabRegister?.addEventListener('click', () => {
+      console.log('✅ Register button clicked');
+      showRegister();
+    });
+
+    console.log('✅ Boot initialized');
+} catch (e) {
+  console.error('Boot error:', e);
+}
+}
+
+boot(); // ✅ call the function
 </script>
 </body>
 </html>
