@@ -1007,20 +1007,16 @@ function doLogout(){
 
 /* End of main script */
 </script>
-
-<!-- ✅ Include Supabase library (after all your app scripts) -->
+<!-- ✅ Include Supabase library -->
 <script src="https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
 
 <script>
-  // ✅ Initialize Supabase client safely after library load
-console.log("✅ Supabase already initialized:", supabase);
+  // ✅ Initialize Supabase client safely
+  const SUPABASE_URL = "https://nwccrgsrkormjbfpkydk.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_9013SsMOXT-pv9-s4eNdnQ_59j90-nl";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   console.log("✅ Supabase initialized:", supabase);
-
-  // Example: simple test query (you can remove this later)
-  // const { data, error } = await supabase.from("users").select("*").limit(1);
-  // if (error) console.error("Supabase test failed:", error);
-  // else console.log("Fetched users:", data);
 </script>
 </body>
 </html>
