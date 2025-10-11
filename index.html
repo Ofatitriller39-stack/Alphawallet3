@@ -6,7 +6,7 @@
 <title>AlphaWallet</title>
 
 <!-- Supabase client (load first so our script can use it) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
 
 <style>
   :root{
@@ -20,6 +20,7 @@
     --pill:#eef6ff;
     --success:#20b04a;
     --danger:#d64545;
+    --header-height:68px;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -42,31 +43,39 @@
     top:0;
     left:0;
     right:0;
-    height:68px;
+    height:var(--header-height);
     display:flex;
     align-items:center;
     justify-content:space-between;
-    padding:12px 20px;
+    padding:12px 16px;
     gap:12px;
     background:linear-gradient(90deg,var(--navy-900),var(--navy-700));
     color:#fff;
-    z-index:120;
+    z-index:1200;
     box-shadow:0 6px 20px rgba(5,10,25,0.45);
   }
   .brand{display:flex;align-items:center;gap:12px}
   .brandBox{
-    width:52px;height:44px;border-radius:8px;background:linear-gradient(180deg,var(--accent),var(--navy-700));
+    width:48px;height:40px;border-radius:8px;background:linear-gradient(180deg,var(--accent),var(--navy-700));
     display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:18px;
     box-shadow:0 6px 18px rgba(6,12,30,0.35);
   }
   .brandText{font-weight:700;font-size:1.05rem}
   .authButtons{display:flex;gap:8px;align-items:center}
-  .authButtons button{border-radius:10px;padding:10px 14px;border:none;cursor:pointer;font-weight:700}
-  .loginBtn{background:#fff;color:var(--navy-800);min-width:120px;font-size:1rem}
-  .logoutBtn{background:var(--danger);color:#fff;display:none;min-width:120px}
+  .authButtons button{border-radius:10px;padding:10px 12px;border:none;cursor:pointer;font-weight:700}
+  .loginBtn{background:#fff;color:var(--navy-800);min-width:110px;font-size:1rem}
+  .logoutBtn{background:var(--danger);color:#fff;display:none;min-width:110px}
 
   /* container */
-  main{width:100%;max-width:1100px;margin:92px 16px 40px;padding:18px;border-radius:12px;background:linear-gradient(180deg,#f8fbff,#ffffff);box-shadow:0 24px 80px rgba(3,10,29,0.18)}
+  main{
+    width:100%;
+    max-width:1100px;
+    margin:calc(var(--header-height) + 18px) 12px 40px;
+    padding:18px;
+    border-radius:12px;
+    background:linear-gradient(180deg,#f8fbff,#ffffff);
+    box-shadow:0 24px 80px rgba(3,10,29,0.18);
+  }
 
   /* auth card */
   .authCard{padding:18px;border-radius:10px;background:#fff;box-shadow:0 10px 30px rgba(6,12,28,0.06)}
@@ -74,7 +83,7 @@
   .tab{flex:1;padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:1px solid #eef6ff;background:#f8fbff;font-weight:700}
   .tab.active{background:linear-gradient(90deg,var(--accent),var(--navy-700));color:#fff}
   label{font-size:0.85rem;color:var(--muted);display:block;margin-top:8px}
-  input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #e6edf8;margin-top:6px;background:#fbfdff;font-size:1rem}
+  input,select,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid #e6edf8;margin-top:6px;background:#fbfdff;font-size:1rem}
   .largeBtn{display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(90deg,var(--accent),var(--navy-700));color:#fff;padding:12px 18px;border-radius:10px;border:none;font-weight:900;font-size:1.05rem;cursor:pointer}
   .largeBtn[disabled]{opacity:0.6;cursor:not-allowed}
   .secondary{background:#fff;color:var(--navy-700);border:1px solid #e6edf8;padding:10px 12px;border-radius:8px;cursor:pointer}
@@ -85,7 +94,7 @@
 
   /* layout for dashboard */
   .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-  .balances{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+  .balances{display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
   .balanceCard{background:#fff;padding:12px;border-radius:10px;min-width:120px;text-align:center;box-shadow:0 10px 28px rgba(8,20,50,0.06);font-weight:800}
   .currSym{font-size:0.9rem;margin-right:6px;color:var(--muted)}
 
@@ -95,11 +104,12 @@
   @media(min-width:1400px){ .tileGrid{grid-template-columns:repeat(4,1fr)} }
   .tile{
     background:linear-gradient(180deg,#ffffff, #f6fbff);
-    padding:18px;border-radius:12px;display:flex;align-items:center;gap:12px;box-shadow:0 14px 40px rgba(8,20,50,0.06);cursor:pointer;
+    padding:16px;border-radius:12px;display:flex;align-items:center;gap:12px;box-shadow:0 14px 40px rgba(8,20,50,0.06);cursor:pointer;
     transition:transform .12s ease, box-shadow .12s ease;
   }
+  .tile:active{transform:translateY(0)}
   .tile:hover{transform:translateY(-6px);box-shadow:0 24px 70px rgba(6,12,28,0.12)}
-  .tileIcon{width:64px;height:64px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:28px}
+  .tileIcon{width:56px;height:56px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:26px}
   .tileTitle{font-weight:900}
   .tileDesc{color:var(--muted);font-size:0.9rem}
 
@@ -125,19 +135,30 @@
   table th,table td{padding:8px;border-bottom:1px solid #f1f6fb;text-align:left;font-size:0.95rem}
   table thead th{position:sticky;top:0;background:#fff;z-index:2}
 
-  /* modals / popup */
-  .modalBackdrop{position:fixed;inset:0;background:rgba(6,12,28,0.45);display:none;align-items:center;justify-content:center;z-index:220}
+  /* modal backdrop */
+  .modalBackdrop{position:fixed;inset:0;background:rgba(6,12,28,0.45);display:none;align-items:center;justify-content:center;z-index:1500}
   .modal{background:#fff;padding:14px;border-radius:10px;max-width:720px;width:95%}
+
+  /* top alert (not blocking; appears below header) */
   .topAlert{
-    position:fixed;left:50%;transform:translateX(-50%);
-    top:-160px;z-index:999;max-width:920px;width:calc(100% - 28px);
-    border-radius:8px;padding:16px 20px;color:#fff;box-shadow:0 14px 36px rgba(3,10,29,0.18);
+    position:fixed;
+    left:50%;
+    transform:translateX(-50%);
+    top:calc(var(--header-height) + 8px);
+    z-index:1300;
+    max-width:920px;
+    width:calc(100% - 28px);
+    border-radius:8px;
+    padding:12px 16px;
+    color:#fff;
+    box-shadow:0 14px 36px rgba(3,10,29,0.18);
     display:flex;align-items:center;justify-content:space-between;gap:12px;
-    transition:top .36s cubic-bezier(.2,.9,.2,1),opacity .36s;
-    opacity:0;
+    opacity:0;pointer-events:none;
+    transition:opacity .24s ease, transform .24s ease;
+    transform-origin:top center;
     font-weight:800;
   }
-  .topAlert.show{top:14px;opacity:1}
+  .topAlert.show{opacity:1;pointer-events:auto}
   .topAlert.success{background:linear-gradient(90deg,#0b7a34,#0a6b2a)}
   .topAlert.info{background:linear-gradient(90deg,var(--navy-700),var(--navy-800))}
   .topAlert.error{background:linear-gradient(90deg,#b91c1c,#7f1d1d)}
@@ -157,6 +178,10 @@
     .brandText{display:none}
     .modal{width:95%}
     .topAlert{left:8px;right:8px;width:calc(100% - 16px)}
+    input,select,textarea{padding:14px}
+    .largeBtn{padding:14px}
+    .tileIcon{width:52px;height:52px;font-size:24px}
+    .balances{flex-direction:row;gap:8px}
   }
 </style>
 </head>
@@ -178,10 +203,10 @@
 </header>
 
 <!-- top alert (slide down) -->
-<div id="topAlert" class="topAlert info" role="status" aria-live="polite">
+<div id="topAlert" class="topAlert info" role="status" aria-live="polite" aria-atomic="true">
   <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
     <div id="topAlertText" class="big">Important message</div>
-    <div id="topAlertSub" class="muted small" style="opacity:0.9"></div>
+    <div id="topAlertSub" class="muted small" style="opacity:0.95"></div>
   </div>
   <div><button id="topAlertClose" class="closeX" aria-label="Close notification">Close</button></div>
 </div>
@@ -190,7 +215,7 @@
   <!-- AUTH (login/register) -->
   <section id="authSection" class="authCard" aria-label="Login or Register">
     <div style="display:flex;gap:18px;flex-wrap:wrap">
-      <div style="flex:1;min-width:320px">
+      <div style="flex:1;min-width:280px">
         <div class="tabs" role="tablist" aria-label="Auth tabs">
           <div id="tabLogin" class="tab active" role="tab">Login</div>
           <div id="tabRegister" class="tab" role="tab">Register</div>
@@ -204,7 +229,7 @@
           <label for="loginPassword">Password</label>
           <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" />
           <div style="display:flex;gap:10px;margin-top:12px">
-            <button id="btnLogin" class="largeBtn" style="flex:1">Login <span id="loginSpinner" style="display:none" class="spinner"></span></button>
+            <button id="btnLogin" class="largeBtn" style="flex:1">Login <span id="loginSpinner" style="display:none" class="spinner" aria-hidden="true"></span></button>
           </div>
 
           <div class="supportBox">
@@ -264,7 +289,7 @@
       </div>
 
       <!-- right column -->
-      <div style="width:320px">
+      <div style="width:320px;min-width:240px">
         <div style="padding:14px;border-radius:10px;background:#f8fbff">
           <div style="font-weight:800;margin-bottom:8px">Why AlphaWallet?</div>
           <div class="muted small">A simple wallet interface for sending, receiving and managing virtual funds. Sign up to start.</div>
@@ -327,7 +352,7 @@
         <div class="tileIcon">💸</div>
         <div>
           <div class="tileTitle">Transfers</div>
-          <div class="tileDesc">Send to banks, PayPal, Zelle, Apple Pay, Western Union & more</div>
+          <div class="tileDesc">Send to banks, PayPal, Zelle, Apple Pay & more</div>
         </div>
       </div>
 
@@ -423,12 +448,12 @@
     </div>
 
     <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap">
-      <div style="flex:1;min-width:360px">
+      <div style="flex:1;min-width:320px">
         <div style="font-weight:800;margin-bottom:6px">Registered users</div>
         <div id="adminUserList" style="background:#f8fbff;padding:12px;border-radius:8px;max-height:320px;overflow:auto"></div>
       </div>
 
-      <div style="width:360px">
+      <div style="width:360px;min-width:260px">
         <div style="font-weight:800;margin-bottom:6px">Fund / Deduct</div>
         <div style="background:#fff;padding:12px;border-radius:8px;border:1px solid #eef6ff">
           <label>Recipient (email)</label>
@@ -454,8 +479,8 @@
 </main>
 
 <!-- modal backdrop -->
-<div id="modalBackdrop" class="modalBackdrop">
-  <div class="modal" role="dialog" aria-modal="true">
+<div id="modalBackdrop" class="modalBackdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div id="modalTitle" style="font-weight:900">Modal</div>
       <button id="modalClose" class="secondary">Close</button>
@@ -465,7 +490,7 @@
 </div>
 
 <script>
-/* -------------- Configuration & storage -------------- */
+/* ----------------- Configuration & storage ----------------- */
 const STORAGE_KEY = 'alphawallet_users_v2';
 let users = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
 let current = JSON.parse(localStorage.getItem('alphawallet_current') || 'null');
@@ -473,12 +498,13 @@ let current = JSON.parse(localStorage.getItem('alphawallet_current') || 'null');
 const ADMIN_EMAIL = 'alphawalllet@gmail.com';
 const ADMIN_PASSWORD = 'admin123';
 
-/* -------------- Supabase client (use your provided keys) -------------- */
-const supabaseUrl = 'https://nwcgrskrortmjbfpkydk.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmYiIiwianRpIjoiZjI6Im5Y3Y2NyZ3Nya29yYWbWpizinBreWRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwODAxNTUsImV4cCI6MjA3NTY2NTQ1NX0.RH5qJVTiIa0D-vxofPs0dIszCAYeb8x5EWFMjBdPw';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+/* ----------------- Supabase (publishable / anon) ----------------- */
+/* Using the publishable key provided (client-side only). Do NOT put secret key here. */
+const SUPABASE_URL = 'https://nwccrgsrkormjbfpkydk.supabase.co';
+const SUPABASE_PUBLISHABLE = 'sb_publishable_9O13SsMOXT-pv9-s4eNdnQ_59j90-nL';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE);
 
-/* -------------- helpers -------------- */
+/* ----------------- helpers ----------------- */
 const el = id => document.getElementById(id);
 const show = e => e && (e.style.display = 'block');
 const hide = e => e && (e.style.display = 'none');
@@ -489,7 +515,7 @@ function genWallet(){ return 'AW-' + Math.random().toString(36).slice(2,11).toUp
 function now(){ return new Date().toISOString(); }
 function prettyDT(iso){ try { return new Date(iso).toLocaleString(); } catch(e){ return iso } }
 
-/* -------------- DOM refs -------------- */
+/* ----------------- DOM refs ----------------- */
 const loginHeaderBtn = el('loginHeaderBtn');
 const logoutHeaderBtn = el('logoutHeaderBtn');
 const tabLogin = el('tabLogin'), tabRegister = el('tabRegister');
@@ -520,26 +546,26 @@ const adminCredit = el('adminCredit'), adminDebit = el('adminDebit'), adminLogou
 const btnCardToggle = el('btnCardToggle');
 const vcStatus = el('vcStatus');
 
-/* -------------- UI helpers -------------- */
-function showTopAlert(text, sub='', type='info'){ // type: info | success | error
+/* ----------------- top alert helpers (fixed, non-blocking) ----------------- */
+function showTopAlert(text, sub='', type='info', duration = 4500){
   topAlertText.innerText = text;
   topAlertSub.innerText = sub || '';
   topAlert.classList.remove('info','success','error');
   topAlert.classList.add(type);
   topAlert.classList.add('show');
-  // auto hide after 5 seconds
+  // Auto-hide after duration
   clearTimeout(showTopAlert._t);
-  showTopAlert._t = setTimeout(()=>{ topAlert.classList.remove('show'); }, 5000);
+  showTopAlert._t = setTimeout(()=>{ topAlert.classList.remove('show'); }, duration);
 }
+// Close button works and doesn't get blocked by other overlays (modal has higher z-index)
 topAlertClose.addEventListener('click', ()=> topAlert.classList.remove('show'));
 
-/* -------------- Tab handlers -------------- */
+/* ----------------- Tabs ----------------- */
 tabLogin.addEventListener('click', ()=>{ tabLogin.classList.add('active'); tabRegister.classList.remove('active'); show(loginBox); hide(registerBox); });
 tabRegister.addEventListener('click', ()=>{ tabRegister.classList.add('active'); tabLogin.classList.remove('active'); show(registerBox); hide(loginBox); });
-
 btnRegBack.addEventListener('click', ()=>{ tabLogin.click(); });
 
-/* -------------- Registration (local + supabase) -------------- */
+/* ----------------- Registration ----------------- */
 btnRegister.addEventListener('click', async () => {
   const first = el('regFirst').value.trim();
   const last = el('regLast').value.trim();
@@ -549,10 +575,10 @@ btnRegister.addEventListener('click', async () => {
   const pw = el('regPassword').value;
   const pw2 = el('regPassword2').value;
 
-  if(!first||!last||!dob||!addr||!email||!pw||!pw2) { alert('Please fill all fields.'); return; }
-  if(pw !== pw2) { alert('Passwords do not match.'); return; }
-  if(!/\S+@\S+\.\S+/.test(email)) { alert('Enter a valid email'); return; }
-  if(users[email]) { alert('Account already exists with that email.'); return; }
+  if(!first||!last||!dob||!addr||!email||!pw||!pw2) { showTopAlert('Please fill all fields', '', 'error'); return; }
+  if(pw !== pw2) { showTopAlert('Passwords do not match', '', 'error'); return; }
+  if(!/\S+@\S+\.\S+/.test(email)) { showTopAlert('Enter a valid email', '', 'error'); return; }
+  if(users[email]) { showTopAlert('Account already exists with that email', '', 'error'); return; }
 
   // create user locally
   const wallet = genWallet();
@@ -589,41 +615,32 @@ btnRegister.addEventListener('click', async () => {
         created_at: new Date().toISOString()
       }]);
     if(error){
-console.error("Supabase insert error:", error);
-alert("❌ Supabase insert error: " + JSON.stringify(error, null, 2));
-      // we continue: local account exists even if remote insert failed
-      showTopAlert('Account created locally but failed to save to cloud. Contact support.', 'Saved locally', 'error');
+      console.warn("Supabase insert error:", error);
+      showTopAlert('Account created locally — cloud save failed', 'Saved locally (could not save to cloud).', 'error');
     } else {
       console.log('User saved to Supabase:', data);
+      showTopAlert('Account created and saved to cloud', 'You can now log in from other devices.', 'success');
     }
   } catch(e){
-    console.error('Supabase error:', e);
-    showTopAlert('Network error while saving account. Try again if needed.', '', 'error');
+    console.warn('Supabase error:', e);
+    showTopAlert('Network error while saving account. Saved locally.', '', 'error');
   }
 
   saveAll();
-
-  // show top verification popup
-  showTopAlert('Account successfully verified — please log in', 'Account verified ✔', 'success');
-
-  // switch to login tab
   tabLogin.click();
 });
 
-/* -------------- Login -------------- */
+/* ----------------- Login ----------------- */
 btnLogin.addEventListener('click', async ()=>{
   const email = el('loginEmail').value.trim().toLowerCase();
   const pw = el('loginPassword').value;
-  if(!email||!pw) { alert('Enter email and password'); return; }
+  if(!email||!pw) { showTopAlert('Enter email and password', '', 'error'); return; }
 
-  // show spinner
   loginSpinner.style.display = 'inline-block';
-
-  await new Promise(r=>setTimeout(r,500)); // UX delay
-
+  await new Promise(r=>setTimeout(r,350));
   loginSpinner.style.display = 'none';
 
-  // admin login
+  // admin login (local)
   if(email === ADMIN_EMAIL && pw === ADMIN_PASSWORD){
     current = { email: ADMIN_EMAIL, role: 'admin' };
     saveAll();
@@ -633,41 +650,44 @@ btnLogin.addEventListener('click', async ()=>{
 
   const u = users[email];
   if(!u || u.password !== pw){
-    // attempt to fetch user from Supabase (if user registered on another device)
-    try {
-      const { data, error } = await supabase.from('users').select('*').eq('email', email).limit(1).single();
-      if(error || !data){
-        return alert('Invalid credentials');
-      } else {
-        // map supabase user to local user object (best-effort)
-        users[email] = users[email] || {};
-        users[email].email = data.email;
-        users[email].first = data.first || users[email].first || '';
-        users[email].last = data.last || users[email].last || '';
-        users[email].fullName = (data.first || '') + ' ' + (data.last || '');
-        users[email].dob = data.dob || users[email].dob || '';
-        users[email].address = data.address || users[email].address || '';
-        users[email].password = pw; // assume they entered correct password
-        users[email].tier = data.tier || 1;
-        users[email].balances = users[email].balances || zeroBal();
-        users[email].transactions = users[email].transactions || [];
-        users[email].wallet = data.wallet || users[email].wallet || genWallet();
-        users[email].cardLast4 = data.card_last4 || (users[email].cardLast4 || (''+Math.floor(1000+Math.random()*9000)));
-        users[email].cardExpiry = data.card_expiry || users[email].cardExpiry || '12/28';
-        users[email].cardActivated = users[email].cardActivated || false;
-        users[email].role = 'user';
-        users[email].createdAt = data.created_at || users[email].createdAt || now();
-        saveAll();
+    // attempt remote verify (best-effort)
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.from('users').select('*').eq('email', email).limit(1).single();
+        if(error || !data){
+          showTopAlert('Invalid credentials', '', 'error');
+          return;
+        } else {
+          // create local copy and accept password (we cannot verify password from profile row)
+          users[email] = users[email] || {};
+          users[email].email = data.email;
+          users[email].first = data.first || '';
+          users[email].last = data.last || '';
+          users[email].fullName = (data.first || '') + ' ' + (data.last || '');
+          users[email].dob = data.dob || '';
+          users[email].address = data.address || '';
+          users[email].password = pw; // adopt entered password
+          users[email].tier = data.tier || 1;
+          users[email].balances = users[email].balances || zeroBal();
+          users[email].transactions = users[email].transactions || [];
+          users[email].wallet = data.wallet || users[email].wallet || genWallet();
+          users[email].cardLast4 = data.card_last4 || (users[email].cardLast4 || (''+Math.floor(1000+Math.random()*9000)));
+          users[email].cardExpiry = data.card_expiry || users[email].cardExpiry || '12/28';
+          users[email].cardActivated = users[email].cardActivated || false;
+          users[email].role = 'user';
+          users[email].createdAt = data.created_at || now();
+          saveAll();
+        }
+      } catch(e){
+        console.warn('Supabase login/verify error (non-blocking):', e);
+        // fall back to local check below
       }
-    } catch(e){
-      console.error('Supabase fetch error', e);
-      return alert('Invalid credentials (and could not verify remotely).');
     }
   }
 
-  // final check
+  // final local check
   const user = users[email];
-  if(!user || user.password !== pw) return alert('Invalid credentials');
+  if(!user || user.password !== pw) { showTopAlert('Invalid credentials', '', 'error'); return; }
 
   current = { email, role: 'user' };
   saveAll();
@@ -678,7 +698,7 @@ btnLogin.addEventListener('click', async ()=>{
 loginHeaderBtn.addEventListener('click', ()=> { window.scrollTo({top:0,behavior:'smooth'}); tabLogin.click(); });
 logoutHeaderBtn.addEventListener('click', doLogout);
 
-/* -------------- open dashboard/admin -------------- */
+/* ----------------- open dashboard/admin ----------------- */
 function openDashboard(){
   hide(authSection); hide(adminSection); show(dashboardSection);
   topAlert.classList.remove('show');
@@ -686,7 +706,7 @@ function openDashboard(){
   logoutHeaderBtn.style.display = 'inline-block';
 
   const u = users[current.email];
-  if(!u) { alert('User not found'); doLogout(); return; }
+  if(!u) { showTopAlert('User not found', '', 'error'); doLogout(); return; }
   userWelcome.innerText = u.fullName || u.email.split('@')[0];
   userEmailDisplay.innerText = u.email;
   el('displayTier').innerText = (u.tier||1);
@@ -705,7 +725,7 @@ function openDashboard(){
   vcStatus.innerText = u.cardActivated ? 'ACTIVATED' : 'NOT ACTIVATED';
 }
 
-/* -------------- render transactions -------------- */
+/* ----------------- render transactions ----------------- */
 function renderTxs(txs){
   txBody.innerHTML = '';
   if(!txs || txs.length === 0){
@@ -723,21 +743,20 @@ function renderTxs(txs){
   });
 }
 
-/* -------------- tiles actions -------------- */
+/* ----------------- tiles actions ----------------- */
 tileReceive.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
+  if(!current) return showTopAlert('Login required', '', 'error');
   if(current.role === 'admin'){ showModal('Admin cannot receive'); return; }
   const u = users[current.email];
   showModal('Your wallet address', `Wallet: ${u.wallet}\n\nShare this address to receive funds.`);
 });
 
 tileTransfer.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
+  if(!current) return showTopAlert('Login required', '', 'error');
   const providers = [
     {name:'Chase', logo:'🏦'}, {name:'Bank of America', logo:'🏛️'}, {name:'Citi', logo:'🏛️'},
     {name:'HSBC', logo:'🌍'}, {name:'Barclays', logo:'🏦'}, {name:'PayPal', logo:'💳'},
-    {name:'Zelle', logo:'⚡'}, {name:'Apple Pay', logo:'🍎'}, {name:'Western Union', logo:'🌐'},
-    {name:'TransferWise', logo:'💱'}, {name:'Revolut', logo:'💠'}, {name:'SWIFT', logo:'✈️'}
+    {name:'Zelle', logo:'⚡'}, {name:'Apple Pay', logo:'🍎'}, {name:'Western Union', logo:'🌐'}
   ];
   let body = 'Select a provider to send funds:\n\n';
   providers.forEach((p,i)=> body += `${i+1}. ${p.logo}  ${p.name}\n`);
@@ -755,13 +774,13 @@ tileTransfer.addEventListener('click', ()=>{
 });
 
 tilePay.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
+  if(!current) return showTopAlert('Login required', '', 'error');
   const billers = ['Electricity','Water','Internet','Cable TV','Rent','Mobile Top-up','Subscriptions'];
   showModal('Pay Bills', billers.map((b,i)=>`${i+1}. ${b}`).join('\n') + '\n\nContact support to complete payments.');
 });
 
 tileHistory.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
+  if(!current) return showTopAlert('Login required', '', 'error');
   const u = users[current.email];
   if(!u.transactions || u.transactions.length === 0) return showModal('Transaction History', 'No transactions yet.');
   const rows = u.transactions.map(t=> `${prettyDT(t.time)} • ${t.desc||t.type} • ${t.amount>=0?'+':'-'}${Math.abs(t.amount).toFixed(2)} ${t.currency || ''}`).join('\n');
@@ -769,17 +788,17 @@ tileHistory.addEventListener('click', ()=>{
 });
 
 tileLoan.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
+  if(!current) return showTopAlert('Login required', '', 'error');
   showTopAlert('Please keep making more transactions to be eligible for loan services', '', 'info');
 });
 
 tileInvest.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
+  if(!current) return showTopAlert('Login required', '', 'error');
   showModal('Investments', 'Starter investment plans:\n\n1) Stable Saver — low risk\n2) Growth Starter — medium risk\n3) Opportunity — higher risk\n\n(Coming soon: integrate with providers)');
 });
 
 tileProfile.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
+  if(!current) return showTopAlert('Login required', '', 'error');
   const u = users[current.email];
   const info = `Name: ${u.fullName}\nEmail: ${u.email}\nDOB: ${u.dob}\nAddress: ${u.address}\nWallet: ${u.wallet}\nCreated: ${prettyDT(u.createdAt)}`;
   showModal('Profile Details', info);
@@ -793,7 +812,7 @@ tileLogout.addEventListener('click', ()=> doLogout());
 
 /* card toggle */
 btnCardToggle && btnCardToggle.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
+  if(!current) return showTopAlert('Login required', '', 'error');
   const u = users[current.email];
   u.cardActivated = !u.cardActivated;
   saveAll();
@@ -804,16 +823,15 @@ btnCardToggle && btnCardToggle.addEventListener('click', ()=>{
 function showModal(title, body, onOpen){
   modalTitle.innerText = title;
   modalBody.innerHTML = `<pre style="white-space:pre-wrap">${body}</pre>`;
-  show(modalBackdrop);
+  modalBackdrop.style.display = 'flex';
+  modalBackdrop.setAttribute('aria-hidden', 'false');
   if(onOpen) onOpen();
 }
-function closeModal(){ hide(modalBackdrop); }
+function closeModal(){ modalBackdrop.style.display = 'none'; modalBackdrop.setAttribute('aria-hidden', 'true'); }
 modalClose.addEventListener('click', closeModal);
 modalBackdrop.addEventListener('click', (e)=> { if(e.target === modalBackdrop) closeModal(); });
 
-/* -------------- top alert already defined above -------------- */
-
-/* -------------- admin functions (fetch users from Supabase to see cross-device registrations) -------------- */
+/* ----------------- admin functions ----------------- */
 async function openAdmin(){
   hide(authSection); hide(dashboardSection); show(adminSection);
   loginHeaderBtn.style.display = 'none';
@@ -824,23 +842,13 @@ async function openAdmin(){
 async function renderAdminUserList(){
   adminUserList.innerHTML = '<div class="muted">Loading users…</div>';
   try {
-    // try to fetch from Supabase first
     const { data, error } = await supabase.from('users').select('*').order('created_at', { ascending: false }).limit(100);
-    if(error){
-      console.warn('Supabase fetch error, falling back to local users:', error);
-      // fallback to local
+    if(error || !data){
       const keys = Object.keys(users).sort((a,b)=> users[a].createdAt < users[b].createdAt ? 1 : -1);
       renderAdminUsersFromLocal(keys);
       return;
     }
     adminUserList.innerHTML = '';
-    if(!data || data.length === 0){
-      // maybe local users exist
-      const keys = Object.keys(users).sort((a,b)=> users[a].createdAt < users[b].createdAt ? 1 : -1);
-      if(keys.length===0){ adminUserList.innerHTML = '<div class="muted">No registered users.</div>'; return; }
-      renderAdminUsersFromLocal(keys);
-      return;
-    }
     data.forEach(rec=>{
       const node = document.createElement('div');
       node.style.padding='8px';
@@ -859,7 +867,7 @@ async function renderAdminUserList(){
       adminUserList.appendChild(node);
     });
   } catch(e){
-    console.error('Error rendering admin list', e);
+    console.warn('Error rendering admin list (falling back to local):', e);
     const keys = Object.keys(users).sort((a,b)=> users[a].createdAt < users[b].createdAt ? 1 : -1);
     renderAdminUsersFromLocal(keys);
   }
@@ -888,21 +896,19 @@ function renderAdminUsersFromLocal(keys){
   });
 }
 
-/* -------------- admin credit / debit actions -------------- */
+/* admin credit / debit actions */
 adminCredit.addEventListener('click', async ()=>{
   const rec = adminRecipient.value.trim().toLowerCase();
   const amt = parseFloat(adminAmount.value);
   const cur = adminCurrency.value;
   const sender = adminSender.value.trim() || 'Admin';
   const note = adminNote.value.trim() || 'Admin credit';
-  if(!rec) return alert('Enter recipient email.');
-  if(isNaN(amt) || amt <= 0) return alert('Enter valid amount');
+  if(!rec) return showTopAlert('Enter recipient email.', '', 'error');
+  if(isNaN(amt) || amt <= 0) return showTopAlert('Enter valid amount', '', 'error');
 
-  // local guard
   if(!users[rec]){
-    // attempt to fetch from Supabase to create local copy
     try{
-      const { data, error } = await supabase.from('users').select('*').eq('email', rec).limit(1).single();
+      const { data } = await supabase.from('users').select('*').eq('email', rec).limit(1).single();
       if(data){
         users[rec] = users[rec] || {};
         users[rec].email = data.email;
@@ -916,20 +922,17 @@ adminCredit.addEventListener('click', async ()=>{
       }
     } catch(e){ console.warn('Could not fetch user from Supabase for credit', e); }
   }
-  if(!users[rec]) return alert('Recipient not found locally or remotely. Make sure email is correct.');
+  if(!users[rec]) return showTopAlert('Recipient not found locally or remotely. Make sure email is correct.', '', 'error');
 
   const before = users[rec].balances[cur] || 0;
   users[rec].balances[cur] = Number(before) + Number(amt);
   users[rec].transactions.unshift({ time: now(), type: 'Admin Credit', desc: note, amount: amt, currency: cur, before: before, after: users[rec].balances[cur], sender });
 
-  // attempt to update Supabase (best-effort) - assumes you have balance columns or a JSON column
   try {
-    // try updating a balance_x column first
     const column = (cur === 'USD') ? 'balance_usd' : (cur === 'EUR') ? 'balance_eur' : 'balance_gbp';
     const updateData = {};
     updateData[column] = users[rec].balances[cur];
-
-    const { data, error } = await supabase.from('users').update(updateData).eq('email', rec);
+    const { error } = await supabase.from('users').update(updateData).eq('email', rec);
     if(error){ console.warn('Supabase update error:', error); }
   } catch(e){ console.warn('Supabase update failed', e); }
 
@@ -946,23 +949,22 @@ adminDebit.addEventListener('click', async ()=>{
   const cur = adminCurrency.value;
   const sender = adminSender.value.trim() || 'Admin';
   const note = adminNote.value.trim() || 'Admin debit';
-  if(!rec) return alert('Enter recipient email.');
-  if(isNaN(amt) || amt <= 0) return alert('Enter valid amount');
+  if(!rec) return showTopAlert('Enter recipient email.', '', 'error');
+  if(isNaN(amt) || amt <= 0) return showTopAlert('Enter valid amount', '', 'error');
 
-  if(!users[rec]) return alert('Recipient not found locally. Click a user from the list to populate the email field.');
+  if(!users[rec]) return showTopAlert('Recipient not found locally. Click a user from the list to populate the email field.', '', 'error');
 
   const before = users[rec].balances[cur] || 0;
-  if(before < amt) return alert('Insufficient balance for the user.');
+  if(before < amt) return showTopAlert('Insufficient balance for the user.', '', 'error');
 
   users[rec].balances[cur] = Number(before) - Number(amt);
   users[rec].transactions.unshift({ time: now(), type: 'Admin Debit', desc: note, amount: -amt, currency: cur, before: before, after: users[rec].balances[cur], sender });
 
-  // attempt to update Supabase
   try {
     const column = (cur === 'USD') ? 'balance_usd' : (cur === 'EUR') ? 'balance_eur' : 'balance_gbp';
     const updateData = {};
     updateData[column] = users[rec].balances[cur];
-    const { data, error } = await supabase.from('users').update(updateData).eq('email', rec);
+    const { error } = await supabase.from('users').update(updateData).eq('email', rec);
     if(error){ console.warn('Supabase update error:', error); }
   } catch(e){ console.warn('Supabase update failed', e); }
 
@@ -975,7 +977,7 @@ adminDebit.addEventListener('click', async ()=>{
 
 adminLogout.addEventListener('click', ()=> doLogout());
 
-/* -------------- logout -------------- */
+/* ----------------- logout ----------------- */
 function doLogout(){
   current = null;
   saveAll();
@@ -987,7 +989,7 @@ function doLogout(){
   tabLogin.click();
 }
 
-/* -------------- boot logic -------------- */
+/* ----------------- boot ----------------- */
 (function boot(){
   try{
     // ensure admin exists locally for convenience
@@ -1001,22 +1003,6 @@ function doLogout(){
   }catch(e){ console.warn('boot error', e); }
   tabLogin.click();
 })();
-
-/* -------------- ensure transactions display updates when admin modifies user that is currently logged -------------- */
-/* already handled inside admin credit/debit */
-
-/* End of main script */
-</script>
-<!-- ✅ Include Supabase library -->
-<script src="https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
-
-<script>
-  // ✅ Initialize Supabase client safely
-  const SUPABASE_URL = "https://nwccrgsrkormjbfpkydk.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_9013SsMOXT-pv9-s4eNdnQ_59j90-nl";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  console.log("✅ Supabase initialized:", supabase);
 </script>
 </body>
 </html>
