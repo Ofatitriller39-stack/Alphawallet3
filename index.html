@@ -1060,27 +1060,23 @@ function openAdmin() {
   } catch (e) {
     console.error('Boot error:', e);
   }
-  // ✅ Add click listeners for Login and Register buttons
-  document.addEventListener("DOMContentLoaded", () => {
-    const tabLogin = document.getElementById("tab-login");
-    const tabRegister = document.getElementById("tab-register");
+<script>
+// ✅ Add click listeners for existing tabLogin and tabRegister
+document.addEventListener("DOMContentLoaded", () => {
+  if (tabLogin && tabRegister) {
+    tabLogin.addEventListener("click", () => {
+      console.log("✅ Login tab clicked");
+      showLogin();
+    });
 
-    if (tabLogin && tabRegister) {
-      tabLogin.addEventListener("click", () => {
-        console.log("✅ Login button clicked");
-        showLogin();
-      });
-
-      tabRegister.addEventListener("click", () => {
-        console.log("✅ Register button clicked");
-        showRegister();
-      });
-
-      console.log("✅ Buttons initialized");
-    } else {
-      console.error("❌ Could not find login or register button");
-    }
-  });
+    tabRegister.addEventListener("click", () => {
+      console.log("✅ Register tab clicked");
+      showRegister();
+    });
+  } else {
+    console.error("❌ Could not find tabLogin or tabRegister");
+  }
+});
 </script>
 </body>
 </html>
