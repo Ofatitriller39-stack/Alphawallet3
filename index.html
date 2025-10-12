@@ -1060,31 +1060,27 @@ function openAdmin() {
   } catch (e) {
     console.error('Boot error:', e);
   }
-  // ✅ Add click listeners for switching between Login and Register tabs
-const tabLogin = document.getElementById('tabLogin');
-const tabRegister = document.getElementById('tabRegister');
+  // ✅ Add click listeners for Login and Register buttons
+  document.addEventListener("DOMContentLoaded", () => {
+    const tabLogin = document.getElementById("tab-login");
+    const tabRegister = document.getElementById("tab-register");
 
-// 👇 Boot logic to enable buttons
-(function boot() {
-  try {
-    // Make sure login and register buttons respond
-    tabLogin?.addEventListener('click', () => {
-      console.log('✅ Login button clicked');
-      showLogin();
-    });
+    if (tabLogin && tabRegister) {
+      tabLogin.addEventListener("click", () => {
+        console.log("✅ Login button clicked");
+        showLogin();
+      });
 
-    tabRegister?.addEventListener('click', () => {
-      console.log('✅ Register button clicked');
-      showRegister();
-    });
+      tabRegister.addEventListener("click", () => {
+        console.log("✅ Register button clicked");
+        showRegister();
+      });
 
-    console.log('✅ Boot initialized');
-} catch (e) {
-  console.error('Boot error:', e);
-}
-}
-
-boot(); // ✅ call the function
+      console.log("✅ Buttons initialized");
+    } else {
+      console.error("❌ Could not find login or register button");
+    }
+  });
 </script>
 </body>
 </html>
