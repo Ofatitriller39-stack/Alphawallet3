@@ -1060,36 +1060,31 @@ function openAdmin() {
   } catch (e) {
     console.error('Boot error:', e);
   }
+<!-- 👇 Add these two buttons -->
+<button id="tabLogin">Login</button>
+<button id="tabRegister">Register</button>
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const tabLogin = document.getElementById("tabLogin");
-  const tabRegister = document.getElementById("tabRegister");
+  document.addEventListener("DOMContentLoaded", () => {
+    const tabLogin = document.getElementById("tabLogin");
+    const tabRegister = document.getElementById("tabRegister");
 
-  if (!tabLogin || !tabRegister) {
-    console.error("❌ Could not find tabLogin or tabRegister elements.");
-    return;
-  }
-
-  tabLogin.addEventListener("click", () => {
-    console.log("✅ Login button clicked");
-    if (typeof showLogin === "function") {
-      showLogin();
-    } else {
-      console.error("❌ showLogin() function not found");
+    if (!tabLogin || !tabRegister) {
+      console.error("❌ Could not find tabLogin or tabRegister elements.");
+      return;
     }
-  });
 
-  tabRegister.addEventListener("click", () => {
-    console.log("✅ Register button clicked");
-    if (typeof showRegister === "function") {
-      showRegister();
-    } else {
-      console.error("❌ showRegister() function not found");
-    }
-  });
+    tabLogin.addEventListener("click", () => {
+      console.log("✅ Login button clicked");
+      showLogin?.(); // make sure showLogin() exists
+    });
 
-  console.log("✅ Button listeners attached successfully");
-});
+    tabRegister.addEventListener("click", () => {
+      console.log("✅ Register button clicked");
+      showRegister?.(); // make sure showRegister() exists
+    });
+
+    console.log("✅ Button listeners attached");
+  });
 </script>
 </body>
 </html>
