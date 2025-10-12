@@ -4,1023 +4,812 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>AlphaWallet</title>
-
-<!-- Supabase client (load first so our script can use it) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
 <style>
   :root{
-    --navy-900:#071235;
-    --navy-800:#0b2a4a;
-    --navy-700:#103a63;
-    --accent:#0b66d0;
-    --muted:#9aa3b2;
-    --bg:#f5f7fb;
+    --blue-1:#004aad;
+    --blue-2:#007bff;
+    --bg:#f4f8ff;
+    --muted:#6b7280;
     --card:#ffffff;
     --pill:#eef6ff;
-    --success:#20b04a;
-    --danger:#d64545;
+    --success:#16a34a;
+    --danger:#dc2626;
   }
   *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0;
-    font-family:Inter,system-ui,Roboto,Arial,Helvetica;
-    background:linear-gradient(180deg,var(--navy-900),var(--navy-800));
-    color:#0b1b2b;
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    min-height:100vh;
-  }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Roboto,Arial;background:var(--bg);color:#071428;-webkit-font-smoothing:antialiased}
+  header{position:fixed;left:0;right:0;top:0;height:72px;display:flex;align-items:center;justify-content:center;z-index:60;pointer-events:none}
+  .brand{display:flex;align-items:center;gap:10px;pointer-events:auto}
+  .brandIcon{width:40px;height:40px;border-radius:8px;background:linear-gradient(90deg,var(--blue-1),var(--blue-2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;box-shadow:0 6px 18px rgba(3,10,29,0.12)}
+  .brandText{color:#fff;font-weight:700;letter-spacing:0.2px}
+  main{padding-top:96px;max-width:1200px;margin:0 auto;padding-left:16px;padding-right:16px}
 
-  /* header */
-  header{
-    position:fixed;
-    top:0;
-    left:0;
-    right:0;
-    height:68px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:12px 20px;
-    gap:12px;
-    background:linear-gradient(90deg,var(--navy-900),var(--navy-700));
-    color:#fff;
-    z-index:120;
-    box-shadow:0 6px 20px rgba(5,10,25,0.45);
-  }
-  .brand{display:flex;align-items:center;gap:12px}
-  .brandBox{
-    width:52px;height:44px;border-radius:8px;background:linear-gradient(180deg,var(--accent),var(--navy-700));
-    display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:18px;
-    box-shadow:0 6px 18px rgba(6,12,30,0.35);
-  }
-  .brandText{font-weight:700;font-size:1.05rem}
-  .authButtons{display:flex;gap:8px;align-items:center}
-  .authButtons button{border-radius:10px;padding:10px 14px;border:none;cursor:pointer;font-weight:700}
-  .loginBtn{background:#fff;color:var(--navy-800);min-width:120px;font-size:1rem}
-  .logoutBtn{background:var(--danger);color:#fff;display:none;min-width:120px}
+/* AUTH area */
+  .auth-viewport{min-height:calc(100vh - 96px);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+  .bgLayer{position:absolute;inset:0;z-index:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .laptopVector{width:820px;max-width:92%;height:auto;opacity:0.32;transform:translateX(-8%);animation:floatX 6.6s ease-in-out infinite}
+  @keyframes floatX{0%{transform:translateX(-8%) translateY(0) rotate(-2deg)}50%{transform:translateX(8%) translateY(-14px) rotate(2deg)}100%{transform:translateX(-8%) translateY(0) rotate(-2deg)}}
 
-  /* container */
-  main{width:100%;max-width:1100px;margin:92px 16px 40px;padding:18px;border-radius:12px;background:linear-gradient(180deg,#f8fbff,#ffffff);box-shadow:0 24px 80px rgba(3,10,29,0.18)}
-
-  /* auth card */
-  .authCard{padding:18px;border-radius:10px;background:#fff;box-shadow:0 10px 30px rgba(6,12,28,0.06)}
-  .tabs{display:flex;gap:8px;margin-bottom:12px}
-  .tab{flex:1;padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:1px solid #eef6ff;background:#f8fbff;font-weight:700}
-  .tab.active{background:linear-gradient(90deg,var(--accent),var(--navy-700));color:#fff}
-  label{font-size:0.85rem;color:var(--muted);display:block;margin-top:8px}
-  input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #e6edf8;margin-top:6px;background:#fbfdff;font-size:1rem}
-  .largeBtn{display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(90deg,var(--accent),var(--navy-700));color:#fff;padding:12px 18px;border-radius:10px;border:none;font-weight:900;font-size:1.05rem;cursor:pointer}
-  .largeBtn[disabled]{opacity:0.6;cursor:not-allowed}
-  .secondary{background:#fff;color:var(--navy-700);border:1px solid #e6edf8;padding:10px 12px;border-radius:8px;cursor:pointer}
-
-  /* spinner */
-  .spinner{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,0.2);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;margin-left:8px}
-  @keyframes spin{to{transform:rotate(360deg)}}
-
-  /* layout for dashboard */
-  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-  .balances{display:flex;gap:12px;align-items:center;margin-bottom:12px}
-  .balanceCard{background:#fff;padding:12px;border-radius:10px;min-width:120px;text-align:center;box-shadow:0 10px 28px rgba(8,20,50,0.06);font-weight:800}
-  .currSym{font-size:0.9rem;margin-right:6px;color:var(--muted)}
-
-  /* tiles */
-  .tileGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
-  @media(min-width:1000px){ .tileGrid{grid-template-columns:repeat(2,1fr)} }
-  @media(min-width:1400px){ .tileGrid{grid-template-columns:repeat(4,1fr)} }
-  .tile{
-    background:linear-gradient(180deg,#ffffff, #f6fbff);
-    padding:18px;border-radius:12px;display:flex;align-items:center;gap:12px;box-shadow:0 14px 40px rgba(8,20,50,0.06);cursor:pointer;
-    transition:transform .12s ease, box-shadow .12s ease;
-  }
-  .tile:hover{transform:translateY(-6px);box-shadow:0 24px 70px rgba(6,12,28,0.12)}
-  .tileIcon{width:64px;height:64px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;font-size:28px}
-  .tileTitle{font-weight:900}
-  .tileDesc{color:var(--muted);font-size:0.9rem}
-
-  .tile.receive .tileIcon{background:linear-gradient(90deg,#0b66d0,#0958b8)}
-  .tile.transfer .tileIcon{background:linear-gradient(90deg,#0b8a5b,#0a6b4a)}
-  .tile.pay .tileIcon{background:linear-gradient(90deg,#ff9f1c,#ff7a00)}
-  .tile.history .tileIcon{background:linear-gradient(90deg,#7b61ff,#5b3eff)}
-  .tile.loan .tileIcon{background:linear-gradient(90deg,#ff6b6b,#d64545)}
-  .tile.inv .tileIcon{background:linear-gradient(90deg,#20b04a,#15803d)}
-  .tile.profile .tileIcon{background:linear-gradient(90deg,#0b66d0,#0a4ea0)}
-  .tile.travel .tileIcon{background:linear-gradient(90deg,#00a3ff,#007ad6)}
-  .tile.logout{background:linear-gradient(90deg,#ffdede,#ffbbbb);color:#7a1b1b}
-  .tile.logout .tileIcon{background:linear-gradient(90deg,#ff4d4d,#d64545)}
-
-  /* virtual card */
-  .virtualCard{margin-top:18px;background:linear-gradient(90deg,var(--navy-700),var(--navy-800));color:#fff;padding:16px;border-radius:12px;box-shadow:0 26px 60px rgba(3,10,29,0.18)}
-  .vcRow{display:flex;justify-content:space-between;align-items:center}
-
-  /* transactions list (positioned under balances and visible) */
-  .txListWrapper{margin-top:14px}
-  .txList{background:#fff;padding:12px;border-radius:10px;box-shadow:0 10px 30px rgba(6,12,28,0.06);margin-top:12px;max-height:300px;overflow:auto}
-  table{width:100%;border-collapse:collapse}
-  table th,table td{padding:8px;border-bottom:1px solid #f1f6fb;text-align:left;font-size:0.95rem}
-  table thead th{position:sticky;top:0;background:#fff;z-index:2}
-
-  /* modals / popup */
-  .modalBackdrop{position:fixed;inset:0;background:rgba(6,12,28,0.45);display:none;align-items:center;justify-content:center;z-index:220}
-  .modal{background:#fff;padding:14px;border-radius:10px;max-width:720px;width:95%}
-  .topAlert{
-    position:fixed;left:50%;transform:translateX(-50%);
-    top:-160px;z-index:999;max-width:920px;width:calc(100% - 28px);
-    border-radius:8px;padding:16px 20px;color:#fff;box-shadow:0 14px 36px rgba(3,10,29,0.18);
-    display:flex;align-items:center;justify-content:space-between;gap:12px;
-    transition:top .36s cubic-bezier(.2,.9,.2,1),opacity .36s;
-    opacity:0;
-    font-weight:800;
-  }
-  .topAlert.show{top:14px;opacity:1}
-  .topAlert.success{background:linear-gradient(90deg,#0b7a34,#0a6b2a)}
-  .topAlert.info{background:linear-gradient(90deg,var(--navy-700),var(--navy-800))}
-  .topAlert.error{background:linear-gradient(90deg,#b91c1c,#7f1d1d)}
-  .topAlert .big{font-weight:900;font-size:1rem}
-  .closeX{background:transparent;border:1px solid rgba(255,255,255,0.14);color:#fff;padding:8px;border-radius:8px;cursor:pointer}
-
-  /* small util */
+/* auth card */
+  .authCard{width:100%;max-width:560px;background:rgba(255,255,255,0.99);border-radius:14px;padding:20px;box-shadow:0 28px 60px rgba(10,16,40,0.12);position:relative;z-index:20}
+  .authTabs{display:flex;gap:8px;margin-bottom:14px}
+  .tabBtn{flex:1;padding:10px;border-radius:10px;border:1px solid #eef6ff;background:#fff;font-weight:700;cursor:pointer}
+  .tabBtn.active{background:linear-gradient(90deg,var(--blue-1),var(--blue-2));color:#fff;box-shadow:0 12px 30px rgba(11,99,212,0.14)}
+  h2.center{margin:6px 0 10px;text-align:center}
+  input[type="text"],input[type="email"],input[type="password"],select,input[type="date"]{width:100%;padding:12px;border-radius:10px;border:1px solid #e8f0ff;margin:8px 0;font-size:1rem;background:#fbfdff}
+  .btn{width:100%;padding:12px;border-radius:10px;border:none;background:linear-gradient(90deg,var(--blue-1),var(--blue-2));color:#fff;font-weight:800;cursor:pointer;margin-top:8px;box-shadow:0 12px 36px rgba(11,99,212,0.12)}
+  .btn.secondary{background:transparent;color:var(--blue-2);border:1px solid #e8f4ff;box-shadow:none}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px dashed #eef6ff}
+  .small{font-size:0.9rem;color:var(--muted)}
   .muted{color:var(--muted)}
-  .small{font-size:0.85rem}
-  .center{text-align:center}
-  footer{margin-top:18px;text-align:center;color:var(--muted);font-size:0.9rem}
-  .supportBox{margin-top:8px;color:var(--muted);font-size:0.95rem}
-  .supportBox strong{color:var(--navy-900)}
+  .photoPreview{width:72px;height:72px;border-radius:10px;background:#f6f9ff;border:1px dashed #e6f0ff;display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:700;color:var(--muted)}
 
-  /* ensure content isn't cut on small screens */
-  @media(max-width:520px){
-    .brandText{display:none}
-    .modal{width:95%}
-    .topAlert{left:8px;right:8px;width:calc(100% - 16px)}
-  }
+/* DASHBOARD & BG */
+  .dashBg{position:fixed;inset:0;z-index:0;pointer-events:none;background:linear-gradient(120deg,#003a7a,#0066cc,#00a9ff);opacity:0.12;filter:blur(36px);transform:translateZ(0);background-size:400% 400%;animation:moveBg 10s linear infinite}
+  @keyframes moveBg{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  .dashboard{padding:22px;position:relative;z-index:20}
+
+/* header area in dashboard */
+  .topRow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .profile{display:flex;align-items:center;gap:12px}
+  .profilePic{width:64px;height:64px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:800}
+  .welcome{font-weight:800}
+  .balances{display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;align-items:center}
+  .balanceCard{background:#fff;border-radius:12px;padding:12px;min-width:120px;box-shadow:0 12px 30px rgba(6,12,28,0.08)}
+  .addr{background:#fff;padding:10px;border-radius:10px;border:1px solid #eef6ff;word-break:break-all;display:inline-block;max-width:100%}
+  .tileGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px}
+  @media(min-width:920px){ .tileGrid{grid-template-columns:repeat(3,1fr)} }
+  .tile{background:linear-gradient(180deg,#fff,#fbfdff);padding:18px;border-radius:12px;box-shadow:0 12px 40px rgba(8,20,50,0.08);cursor:pointer;display:flex;flex-direction:column;gap:8px;align-items:flex-start;transition:transform .14s ease,box-shadow .14s ease}
+  .tile:hover{transform:translateY(-8px) scale(1.01);box-shadow:0 30px 60px rgba(11,99,212,0.10)}
+  .tile h4{margin:0}
+  .tile p{margin:0;color:var(--muted)}
+  .tileIcon{width:48px;height:48px;border-radius:12px;background:linear-gradient(90deg,var(--blue-1),var(--blue-2));display:flex;align-items:center;justify-content:center;color:white;font-weight:900}
+
+/* virtual card */
+  .cardWrap{margin-top:20px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+  .virtualCard{width:100%;max-width:520px;border-radius:14px;padding:18px;background:linear-gradient(90deg,var(--blue-1),var(--blue-2));color:#fff;box-shadow:0 26px 60px rgba(3,10,29,0.16);display:flex;flex-direction:column;gap:12px;animation:cardPulse 2.4s ease-in-out infinite}
+  @keyframes cardPulse{0%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.01)}100%{transform:translateY(0) scale(1)}}
+  .cardRow{display:flex;justify-content:space-between;align-items:center}
+  .cardNumber{letter-spacing:2px;font-weight:800}
+  .cardSmall{font-size:0.85rem;opacity:0.95}
+  .cardActions{display:flex;gap:8px}
+  .threeOptions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .threeBtn{flex:1;padding:10px;border-radius:10px;background:#fff;color:var(--blue-2);font-weight:700;cursor:pointer;border:none}
+
+/* transactions list */
+  .txList{margin-top:12px;background:#fff;border-radius:12px;padding:12px;box-shadow:0 12px 30px rgba(6,12,28,0.06);max-width:720px;width:100%}
+  .txItem{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eef6ff}
+  .txItem:last-child{border-bottom:none}
+
+/* badge */
+  .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.18);font-weight:800}
+
+/* admin table */
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  table th,table td{padding:8px;border:1px solid #eef6ff;text-align:left}
+
+/* modal */
+  .modalBackdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;z-index:120}
+  .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 20px 50px rgba(10,16,40,0.08)}
+  .hidden{display:none}
+  footer{margin-top:18px;padding:10px;text-align:center;color:var(--muted)}
+  .supportRow{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:8px}
+  .whatsappIcon{width:18px;height:18px;display:inline-block;vertical-align:middle}
 </style>
 </head>
 <body>
 
 <header>
   <div class="brand">
-    <div class="brandBox">AW</div>
-    <div>
-      <div class="brandText">AlphaWallet</div>
-      <div class="small muted">Secure • Smart • Simple</div>
-    </div>
-  </div>
-
-  <div class="authButtons">
-    <button id="loginHeaderBtn" class="loginBtn">Login</button>
-    <button id="logoutHeaderBtn" class="logoutBtn">Logout</button>
+    <div class="brandIcon">AW</div>
+    <div class="brandText" style="color:#fff">AlphaWallet</div>
   </div>
 </header>
 
-<!-- top alert (slide down) -->
-<div id="topAlert" class="topAlert info" role="status" aria-live="polite">
-  <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
-    <div id="topAlertText" class="big">Important message</div>
-    <div id="topAlertSub" class="muted small" style="opacity:0.9"></div>
-  </div>
-  <div><button id="topAlertClose" class="closeX" aria-label="Close notification">Close</button></div>
-</div>
-
 <main>
-  <!-- AUTH (login/register) -->
-  <section id="authSection" class="authCard" aria-label="Login or Register">
-    <div style="display:flex;gap:18px;flex-wrap:wrap">
-      <div style="flex:1;min-width:320px">
-        <div class="tabs" role="tablist" aria-label="Auth tabs">
-          <div id="tabLogin" class="tab active" role="tab">Login</div>
-          <div id="tabRegister" class="tab" role="tab">Register</div>
-        </div>
 
-        <!-- Login Box -->
-        <div id="loginBox">
-          <h2 style="margin:6px 0">Welcome back</h2>
-          <label for="loginEmail">Email</label>
-          <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="username" />
-          <label for="loginPassword">Password</label>
-          <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" />
-          <div style="display:flex;gap:10px;margin-top:12px">
-            <button id="btnLogin" class="largeBtn" style="flex:1">Login <span id="loginSpinner" style="display:none" class="spinner"></span></button>
-          </div>
+  <!-- AUTH -->
+  <section id="authView" class="auth-viewport" aria-label="Authentication view">
+    <div class="bgLayer" aria-hidden="true">
+      <!-- vector laptop -->
+      <svg class="laptopVector" viewBox="0 0 860 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+        <defs>
+          <linearGradient id="g1" x1="0" x2="1">
+            <stop offset="0" stop-color="#0b0b0b"/>
+            <stop offset="1" stop-color="#111213"/>
+          </linearGradient>
+          <linearGradient id="g2" x1="0" x2="1">
+            <stop offset="0" stop-color="#041428"/>
+            <stop offset="1" stop-color="#053a6d"/>
+          </linearGradient>
+        </defs>
+        <rect x="60" y="60" rx="18" ry="18" width="740" height="420" fill="url(#g1)" />
+        <rect x="92" y="96" rx="10" ry="10" width="676" height="300" fill="url(#g2)" opacity="0.95"/>
+        <rect x="40" y="380" rx="12" ry="12" width="780" height="52" fill="#0b0b0b"/>
+      </svg>
+    </div>
 
-          <div class="supportBox">
-            <div>Customer Support:</div>
-            <div><strong>alphawalllet@gmail.com</strong></div>
-            <div><strong>WhatsApp: +1 (647) 589-7303</strong></div>
-          </div>
-        </div>
-
-        <!-- Register Box -->
-        <div id="registerBox" style="display:none">
-          <h2 style="margin:6px 0">Create account</h2>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <div>
-              <label for="regFirst">First name</label>
-              <input id="regFirst" type="text" placeholder="First name" />
-            </div>
-            <div>
-              <label for="regLast">Last name</label>
-              <input id="regLast" type="text" placeholder="Last name" />
-            </div>
-          </div>
-
-          <label for="regDOB">Date of Birth</label>
-          <input id="regDOB" type="date" />
-
-          <label for="regAddress">Residential address</label>
-          <input id="regAddress" type="text" placeholder="Street address, city" />
-
-          <label for="regEmail">Email</label>
-          <input id="regEmail" type="email" placeholder="you@example.com" />
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <div>
-              <label for="regPassword">Password</label>
-              <input id="regPassword" type="password" placeholder="Password" />
-            </div>
-            <div>
-              <label for="regPassword2">Confirm password</label>
-              <input id="regPassword2" type="password" placeholder="Confirm password" />
-            </div>
-          </div>
-
-          <div style="display:flex;gap:8px;margin-top:12px">
-            <button id="btnRegister" class="largeBtn" style="flex:1">Create account</button>
-            <button id="btnRegBack" class="secondary">Back</button>
-          </div>
-
-          <!-- note: support also on registration -->
-          <div class="supportBox">
-            <div>Customer Support:</div>
-            <div><strong>alphawalllet@gmail.com</strong></div>
-            <div><strong>WhatsApp: +1 (647) 589-7303</strong></div>
-          </div>
-        </div>
+    <div class="authCard" role="region" aria-label="Login or register">
+      <div class="authTabs" role="tablist">
+        <button id="tabLogin" class="tabBtn active" role="tab">Login</button>
+        <button id="tabRegister" class="tabBtn" role="tab">Register</button>
       </div>
 
-      <!-- right column -->
-      <div style="width:320px">
-        <div style="padding:14px;border-radius:10px;background:#f8fbff">
-          <div style="font-weight:800;margin-bottom:8px">Why AlphaWallet?</div>
-          <div class="muted small">A simple wallet interface for sending, receiving and managing virtual funds. Sign up to start.</div>
-          <div style="margin-top:12px;font-weight:700">Support</div>
-          <div class="muted" style="margin-top:6px">Email: <strong>alphawalllet@gmail.com</strong></div>
-          <div class="muted" style="margin-top:6px">WhatsApp: <strong>+1 (647) 589-7303</strong></div>
+      <!-- LOGIN -->
+      <div id="loginBox">
+        <h2 class="center">Welcome back</h2>
+        <input id="loginEmail" type="email" placeholder="Email" autocomplete="username" />
+        <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" />
+        <button id="btnLogin" class="btn">Login</button>
+        <p class="small center">Don't have an account? <a href="#" id="showRegisterLink">Create account</a></p>
+
+        <!-- support info pre-login -->
+        <div class="supportRow">
+          <div class="small muted">Support:</div>
+          <div class="small"><strong>alphawalllet@gmail.com</strong></div>
+          <div class="small" style="display:flex;align-items:center;gap:6px">
+            <!-- whatsapp svg icon -->
+            <svg class="whatsappIcon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path fill="#25D366" d="M16 .5C7.124.5-.5 6.993-.5 15.2c0 3.087.975 5.936 2.816 8.262L0 31.5l8.528-2.243c2.253 1.1 4.803 1.72 7.472 1.72 8.876 0 16.5-6.493 16.5-14.7C32.5 6.993 25.876.5 16 .5z"/><path fill="#FFF" d="M24.6 20.4c-.6-.3-3.6-1.8-4.1-2-.5-.3-.8-.3-1.1.3s-1.2 2-1.5 2.4c-.3.3-.6.4-1.2.1-1-.5-1.9-1.8-2.5-3.4-.2-.5 0-.7.4-1 0 0 1-.8 1.2-1s.4-.3.6-.5c.2-.2.1-.5 0-.8-.1-.3-1.1-2.6-1.5-3.5-.4-.9-.8-.8-1.1-.8s-.7 0-1 .1c-.4.1-1 0-1.7.7-.7.6-1.9 1.9-1.9 4.6 0 2.7 2 5.3 2.3 5.7.3.4 3.9 6 9.4 8.2 5.5 2.2 5.5-1.3 6.1-1.8.6-.6 3.3-4.4 3.3-8.1 0-3.7-2.7-5.4-3.3-5.7z"/></svg>
+            <div><strong>+1 (647) 589-7303</strong></div>
+          </div>
         </div>
+
       </div>
+
+      <!-- REGISTER -->
+      <div id="registerBox" class="hidden" aria-hidden="true">
+        <h2 class="center">Create account</h2>
+        <input id="regName" type="text" placeholder="Full name" autocomplete="name" />
+        <input id="regEmail" type="email" placeholder="Email" autocomplete="email" />
+      <input 
+  id="regPassword" 
+  type="password" 
+  value="Horizonalpha" 
+  readonly 
+  style="background-color:#f3f3f3; cursor:not-allowed;" 
+/>
+<small class="text-muted">Default password for all users is <b>Horizonalpha</b></small>
+        <label class="small">Date of birth</label>
+        <input id="regDOB" type="date" />
+        <label class="small">Gender</label>
+        <select id="regGender"><option value="">Select</option><option>Female</option><option>Male</option><option>Other</option></select>
+        <input id="regAddress" type="text" placeholder="House address" />
+        <div style="display:flex;gap:8px"><input id="regCountry" type="text" placeholder="Country of residence" /><input id="regState" type="text" placeholder="State" /></div>
+        <label class="small">Upload profile photo (optional)</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="photoPreview" id="photoPreview">No photo</div>
+          <div style="flex:1"><input id="regPhoto" type="file" accept="image/*" /></div>
+        </div>
+        <label class="small">Account tier</label>
+        <select id="regTier"><option value="1">Tier 1 — Basic</option><option value="2">Tier 2 — Verified</option><option value="3">Tier 3 — Full</option></select>
+        <button id="btnRegister" class="btn">Create account</button>
+        <p class="small center">Already registered? <a href="#" id="showLoginLink">Login</a></p>
+      </div>
+
+      <div style="margin-top:10px" class="small center">Support: <strong>alphawalllet@gmail.com</strong></div>
     </div>
   </section>
 
-  <!-- Dashboard (user) -->
-  <section id="dashboardSection" style="display:none">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px">
-      <div>
-        <div class="muted small">Welcome back</div>
-        <div style="font-weight:900;font-size:1.15rem" id="userWelcome">User</div>
-        <div class="muted small" id="userEmailDisplay">email</div>
+  <!-- DASHBOARD -->
+  <div id="dashBg" class="dashBg hidden" aria-hidden="true"></div>
+
+  <section id="dashboardView" class="dashboard hidden" aria-label="Dashboard">
+    <div class="topRow">
+      <div class="profile">
+        <div class="profilePic" id="profilePic"></div>
+        <div>
+          <div class="welcome" id="welcomeText">Welcome, User</div>
+          <div class="small muted" id="welcomeEmail">email@example.com</div>
+        </div>
       </div>
       <div style="text-align:right">
-        <div class="muted small">Account Tier</div>
-        <div style="font-weight:900;padding:6px 12px;border-radius:999px;background:var(--pill);margin-top:6px" id="displayTier">1</div>
+        <div class="small muted">Account Tier</div>
+        <div style="margin-top:6px"><span style="display:inline-block;padding:6px 10px;border-radius:999px;background:var(--pill);color:var(--blue-2);font-weight:700" id="displayTier">1</span></div>
       </div>
     </div>
 
-    <!-- balances -->
-    <div class="balances">
-      <div class="balanceCard"><div class="muted small">USD</div><div style="font-size:1.25rem">$ <span id="balUSD">0.00</span></div></div>
-      <div class="balanceCard"><div class="muted small">EUR</div><div style="font-size:1.25rem">€ <span id="balEUR">0.00</span></div></div>
-      <div class="balanceCard"><div class="muted small">GBP</div><div style="font-size:1.25rem">£ <span id="balGBP">0.00</span></div></div>
-    </div>
-
-    <!-- transactions table (under balances) -->
-    <div class="txListWrapper">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="font-weight:900">Recent transactions</div>
-        <div class="muted small">Auto-updates after transfers</div>
-      </div>
-      <div class="txList" id="txList">
-        <table id="txTable" style="margin-top:8px">
-          <thead><tr><th>Date/Time</th><th>Description</th><th>Before</th><th>After</th><th>Amount</th></tr></thead>
-          <tbody id="txBody">
-            <tr><td colspan="5" class="muted center">No transactions yet.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- tiles -->
-    <div class="tileGrid" id="tileGrid" style="margin-top:12px">
-      <div class="tile receive" id="tileReceive">
-        <div class="tileIcon">🔗</div>
-        <div>
-          <div class="tileTitle">Receive Payments</div>
-          <div class="tileDesc">View your wallet address to receive funds</div>
+    <div class="balances" style="margin-top:12px">
+      <div style="flex:1">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="balanceCard"><div class="small">USD</div><div id="balUSD" style="font-weight:900;font-size:1.1rem">0.000</div></div>
+          <div class="balanceCard"><div class="small">EUR</div><div id="balEUR" style="font-weight:900;font-size:1.1rem">0.000</div></div>
+          <div class="balanceCard"><div class="small">GBP</div><div id="balGBP" style="font-weight:900;font-size:1.1rem">0.000</div></div>
         </div>
-      </div>
 
-      <div class="tile transfer" id="tileTransfer">
-        <div class="tileIcon">💸</div>
-        <div>
-          <div class="tileTitle">Transfers</div>
-          <div class="tileDesc">Send to banks, PayPal, Zelle, Apple Pay, Western Union & more</div>
-        </div>
-      </div>
-
-      <div class="tile pay" id="tilePay">
-        <div class="tileIcon">🧾</div>
-        <div>
-          <div class="tileTitle">Pay Bills</div>
-          <div class="tileDesc">TV, Electricity, Rent, Subscriptions</div>
-        </div>
-      </div>
-
-      <div class="tile history" id="tileHistory">
-        <div class="tileIcon">📜</div>
-        <div>
-          <div class="tileTitle">Transaction History</div>
-          <div class="tileDesc">Detailed record of past activity</div>
-        </div>
-      </div>
-
-      <div class="tile loan" id="tileLoan">
-        <div class="tileIcon">🏦</div>
-        <div>
-          <div class="tileTitle">Loan Services</div>
-          <div class="tileDesc">Become eligible by transacting more</div>
-        </div>
-      </div>
-
-      <div class="tile inv" id="tileInvest">
-        <div class="tileIcon">📈</div>
-        <div>
-          <div class="tileTitle">Investments</div>
-          <div class="tileDesc">Simple portfolio starter plans</div>
-        </div>
-      </div>
-
-      <div class="tile profile" id="tileProfile">
-        <div class="tileIcon">👤</div>
-        <div>
-          <div class="tileTitle">Profile Details</div>
-          <div class="tileDesc">View registration information</div>
-        </div>
-      </div>
-
-      <div class="tile travel" id="tileTravel">
-        <div class="tileIcon">✈️</div>
-        <div>
-          <div class="tileTitle">Flights & Taxi</div>
-          <div class="tileDesc">Book transport services</div>
-        </div>
-      </div>
-
-      <div class="tile logout" id="tileLogout">
-        <div class="tileIcon">⏻</div>
-        <div>
-          <div class="tileTitle">Logout</div>
-          <div class="tileDesc">Sign out of AlphaWallet</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- virtual card -->
-    <div class="virtualCard" style="margin-top:18px">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-size:0.9rem">AlphaWallet Virtual</div>
-          <div style="font-weight:900;font-size:1.1rem" id="vcNumber">**** **** **** 1234</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:0.85rem">Expiry</div>
-          <div id="vcExpiry">--/--</div>
-        </div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
-        <div id="vcHolder">User Name</div>
-        <div style="display:flex;gap:10px;align-items:center">
-          <div id="vcStatus" style="background:rgba(255,255,255,0.12);padding:6px 10px;border-radius:999px;font-weight:800">NOT ACTIVATED</div>
-          <button id="btnCardToggle" class="secondary">Toggle</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Admin panel -->
-  <section id="adminSection" style="display:none;background:#fff;padding:18px;border-radius:10px;margin-top:12px;box-shadow:0 10px 30px rgba(6,12,28,0.06)">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div style="font-weight:900">Admin Panel</div>
-        <div class="muted small">Manage users, fund accounts or deduct balances</div>
-      </div>
-      <div>
-        <button id="adminLogout" class="secondary">Logout Admin</button>
-      </div>
-    </div>
-
-    <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap">
-      <div style="flex:1;min-width:360px">
-        <div style="font-weight:800;margin-bottom:6px">Registered users</div>
-        <div id="adminUserList" style="background:#f8fbff;padding:12px;border-radius:8px;max-height:320px;overflow:auto"></div>
-      </div>
-
-      <div style="width:360px">
-        <div style="font-weight:800;margin-bottom:6px">Fund / Deduct</div>
-        <div style="background:#fff;padding:12px;border-radius:8px;border:1px solid #eef6ff">
-          <label>Recipient (email)</label>
-          <input id="adminRecipient" placeholder="recipient@example.com" />
-          <label>Currency</label>
-          <select id="adminCurrency"><option>USD</option><option>EUR</option><option>GBP</option></select>
-          <label>Amount</label>
-          <input id="adminAmount" placeholder="0.00" />
-          <label>Sender name (visible to recipient)</label>
-          <input id="adminSender" placeholder="Sender name" />
-          <label>Note / Purpose</label>
-          <input id="adminNote" placeholder="Note" />
-          <div style="display:flex;gap:8px;margin-top:10px">
-            <button id="adminCredit" class="largeBtn" style="flex:1">Credit</button>
-            <button id="adminDebit" class="secondary" style="width:120px">Debit</button>
+        <!-- Recent transactions under balance -->
+        <div class="txList" id="recentTx">
+          <div style="font-weight:800">Latest Transactions</div>
+          <div id="txItems" style="margin-top:8px">
+            <div class="small muted">No transactions yet.</div>
           </div>
         </div>
       </div>
+
+      <div style="width:320px;margin-left:12px">
+        <div class="addrBox" style="margin-top:0;">
+          <div class="small muted">Wallet address</div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+            <div class="addr" id="walletAddress">AWL-XXXXXXX</div>
+            <div>
+              <button class="btn secondary" id="copyAddrBtn" style="width:auto;padding:8px 10px">Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Support & WhatsApp -->
+        <div style="margin-top:14px;text-align:center">
+          <div class="small muted">Need help?</div>
+          <div style="margin-top:6px"><strong>alphawalllet@gmail.com</strong></div>
+          <div style="display:flex;gap:8px;align-items:center;justify-content:center;margin-top:6px">
+            <svg class="whatsappIcon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px"><path fill="#25D366" d="M16 .5C7.124.5-.5 6.993-.5 15.2c0 3.087.975 5.936 2.816 8.262L0 31.5l8.528-2.243c2.253 1.1 4.803 1.72 7.472 1.72 8.876 0 16.5-6.493 16.5-14.7C32.5 6.993 25.876.5 16 .5z"/><path fill="#FFF" d="M24.6 20.4c-.6-.3-3.6-1.8-4.1-2-.5-.3-.8-.3-1.1.3s-1.2 2-1.5 2.4c-.3.3-.6.4-1.2.1-1-.5-1.9-1.8-2.5-3.4-.2-.5 0-.7.4-1 0 0 1-.8 1.2-1s.4-.3.6-.5c.2-.2.1-.5 0-.8-.1-.3-1.1-2.6-1.5-3.5-.4-.9-.8-.8-1.1-.8s-.7 0-1 .1c-.4.1-1 0-1.7.7-.7.6-1.9 1.9-1.9 4.6 0 2.7 2 5.3 2.3 5.7.3.4 3.9 6 9.4 8.2 5.5 2.2 5.5-1.3 6.1-1.8.6-.6 3.3-4.4 3.3-8.1 0-3.7-2.7-5.4-3.3-5.7z"/></svg>
+            <div><strong>+1 (647) 589-7303</strong></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="tileGrid" id="tileGrid" aria-hidden="false">
+      <div class="tile" id="tileReceive" role="button" tabindex="0"><div class="tileIcon">R</div><h4>Receive</h4><p class="small">Show your address and QR to receive funds.</p></div>
+      <div class="tile" id="tileTransfer" role="button" tabindex="0"><div class="tileIcon">T</div><h4>Transfer</h4><p class="small">Transfer funds (admin access only).</p></div>
+      <div class="tile" id="tilePay" role="button" tabindex="0"><div class="tileIcon">P</div><h4>Pay Bills</h4><p class="small">Electricity, Rent, Insurance and more.</p></div>
+      <div class="tile" id="tileTransport" role="button" tabindex="0"><div class="tileIcon">V</div><h4>Transport & Toll</h4><p class="small">Pay fares, tolls and transit.</p></div>
+      <div class="tile" id="tileTravel" role="button" tabindex="0"><div class="tileIcon">✈</div><h4>Travel & Hotel</h4><p class="small">Book travel & hotel reservations.</p></div>
+      <div class="tile" id="tileTarget" role="button" tabindex="0"><div class="tileIcon">🎯</div><h4>Target, Spend & Save</h4><p class="small">Budget and saving goals.</p></div>
+      <div class="tile" id="tileHistory" role="button" tabindex="0"><div class="tileIcon">H</div><h4>History</h4><p class="small">View transactions.</p></div>
+      <div class="tile" id="tileSettings" role="button" tabindex="0"><div class="tileIcon">S</div><h4>Settings</h4><p class="small">Profile & password.</p></div>
+      <div class="tile" id="tileLogout" role="button" tabindex="0"><div class="tileIcon" style="background:linear-gradient(90deg,#ef4444,#fb7185)">L</div><h4>Logout</h4><p class="small">Sign out.</p></div>
+    </div>
+
+    <!-- Visual card placed under tiles as requested -->
+    <div class="cardWrap" style="margin-top:18px">
+      <div class="virtualCard" id="virtualCard" aria-hidden="false">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="cardSmall">AlphaWallet Virtual</div>
+            <div class="cardNumber" id="cardNumber">**** **** **** 1234</div>
+          </div>
+          <div style="text-align:right">
+            <div class="cardSmall">Expiry</div>
+            <div id="cardExpiry">--/--</div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:800" id="cardName">User Name</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div class="badge" id="cardStatus" style="background:rgba(255,255,255,0.18)">NOT ACTIVATED</div>
+            <button id="btnCardDetails" class="btn secondary" style="padding:8px 10px">Card</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center">
+          <div style="flex:1">
+            <div class="cardSmall">Card last 4</div>
+            <div id="cardLast4">1234</div>
+          </div>
+          <div style="flex:1">
+            <div class="cardSmall">Status</div>
+            <div id="cardState" style="font-weight:800;color:rgba(255,255,255,0.95)">Not active</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="threeOptions" style="max-width:520px;margin-top:10px">
+        <button class="threeBtn" id="optLoan">Loan</button>
+        <button class="threeBtn" id="optVisual">Virtual Card</button>
+        <button class="threeBtn" id="optSettings">Settings</button>
+      </div>
+    </div>
+
+    <div id="featurePanel" style="margin-top:18px"></div>
+
+    <footer style="margin-top:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="small muted">© 2025 AlphaWallet</div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="small muted">Support:</div>
+          <div><strong>alphawalllet@gmail.com</strong></div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <svg class="whatsappIcon" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px"><path fill="#25D366" d="M16 .5C7.124.5-.5 6.993-.5 15.2c0 3.087.975 5.936 2.816 8.262L0 31.5l8.528-2.243c2.253 1.1 4.803 1.72 7.472 1.72 8.876 0 16.5-6.493 16.5-14.7C32.5 6.993 25.876.5 16 .5z"/><path fill="#FFF" d="M24.6 20.4c-.6-.3-3.6-1.8-4.1-2-.5-.3-.8-.3-1.1.3s-1.2 2-1.5 2.4c-.3.3-.6.4-1.2.1-1-.5-1.9-1.8-2.5-3.4-.2-.5 0-.7.4-1 0 0 1-.8 1.2-1s.4-.3.6-.5c.2-.2.1-.5 0-.8-.1-.3-1.1-2.6-1.5-3.5-.4-.9-.8-.8-1.1-.8s-.7 0-1 .1c-.4.1-1 0-1.7.7-.7.6-1.9 1.9-1.9 4.6 0 2.7 2 5.3 2.3 5.7.3.4 3.9 6 9.4 8.2 5.5 2.2 5.5-1.3 6.1-1.8.6-.6 3.3-4.4 3.3-8.1 0-3.7-2.7-5.4-3.3-5.7z"/></svg>
+            <div><strong>+1 (647) 589-7303</strong></div>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </section>
+
+  <!-- ADMIN view -->
+  <section id="adminView" class="hidden" aria-label="Admin panel" style="padding:18px">
+    <div class="card">
+      <h3>Admin Panel</h3>
+      <div class="small muted">Manage registered users</div>
+      <div id="adminTableWrap"></div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn" id="adminExport">Export Users</button>
+        <button class="btn ghost" id="adminLogoutBtn">Logout Admin</button>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <h4>Admin Transfer</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:720px">
+        <select id="admin_source"><option value="admin">Source (choose)</option></select>
+        <select id="admin_recipient"><option value="">Recipient</option></select>
+        <select id="admin_currency"><option>USD</option><option>EUR</option><option>GBP</option></select>
+        <input id="admin_amount" placeholder="Amount" />
+        <input id="admin_senderName" placeholder="Sender name (will appear to recipient)" style="grid-column:1 / -1" />
+        <input id="admin_note" placeholder="Note / Purpose" style="grid-column:1 / -1" />
+        <div style="grid-column:1 / -1;display:flex;gap:8px">
+          <button id="adminTransferBtn" class="btn">Transfer</button>
+          <button id="adminRefreshBtn" class="btn secondary">Refresh</button>
+        </div>
+      </div>
     </div>
   </section>
 
-  <footer>© 2025 AlphaWallet • Support: alphawalllet@gmail.com • WhatsApp: +1 (647) 589-7303</footer>
 </main>
 
-<!-- modal backdrop -->
-<div id="modalBackdrop" class="modalBackdrop">
-  <div class="modal" role="dialog" aria-modal="true">
+<!-- GLOBAL MODAL -->
+<div id="modal" class="hidden modalBackdrop" aria-hidden="true">
+  <div class="card" style="width:92%;max-width:720px;position:relative">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <div id="modalTitle" style="font-weight:900">Modal</div>
-      <button id="modalClose" class="secondary">Close</button>
+      <h3 id="modalTitle">Modal</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div id="modalSpinner" class="hidden" aria-hidden="true" style="width:28px;height:28px;border-radius:50%;border:4px solid rgba(0,0,0,0.08);border-top-color:var(--blue-2);animation:spin 1s linear infinite"></div>
+        <button id="modalClose" class="btn secondary" style="width:auto;padding:8px 10px">Close</button>
+      </div>
     </div>
-    <div id="modalBody" style="margin-top:10px;white-space:pre-wrap;font-size:0.95rem"></div>
+    <div id="modalBody" style="margin-top:12px"></div>
   </div>
 </div>
 
 <script>
-/* -------------- Configuration & storage -------------- */
-const STORAGE_KEY = 'alphawallet_users_v2';
+/* STORAGE */
+const STORAGE_KEY = 'alphawallet_final_live_v2';
 let users = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
 let current = JSON.parse(localStorage.getItem('alphawallet_current') || 'null');
 
 const ADMIN_EMAIL = 'alphawalllet@gmail.com';
 const ADMIN_PASSWORD = 'admin123';
 
-/* -------------- Supabase client (use your provided keys) -------------- */
-const supabaseUrl = 'https://nwcgrskrortmjbfpkydk.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmYiIiwianRpIjoiZjI6Im5Y3Y2NyZ3Nya29yYWbWpizinBreWRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwODAxNTUsImV4cCI6MjA3NTY2NTQ1NX0.RH5qJVTiIa0D-vxofPs0dIszCAYeb8x5EWFMjBdPw';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-/* -------------- helpers -------------- */
 const el = id => document.getElementById(id);
-const show = e => e && (e.style.display = 'block');
-const hide = e => e && (e.style.display = 'none');
+const show = id => el(id).classList.remove('hidden');
+const hide = id => el(id).classList.add('hidden');
 const saveAll = ()=>{ localStorage.setItem(STORAGE_KEY, JSON.stringify(users)); if(current) localStorage.setItem('alphawallet_current', JSON.stringify(current)); else localStorage.removeItem('alphawallet_current'); };
 
-function zeroBal(){ return { USD:0.00, EUR:0.00, GBP:0.00 }; }
-function genWallet(){ return 'AW-' + Math.random().toString(36).slice(2,11).toUpperCase(); }
-function now(){ return new Date().toISOString(); }
-function prettyDT(iso){ try { return new Date(iso).toLocaleString(); } catch(e){ return iso } }
+function zeroBalances(){ return { USD:0.000, EUR:0.000, GBP:0.000 }; }
+function genAddr(){ return 'AWL-' + Math.random().toString(36).slice(2,9).toUpperCase(); }
+function nowStamp(){ return new Date().toISOString(); }
+function formatDateTime(iso){ const d = new Date(iso); return d.toLocaleString(); }
+function randCardLast4(){ return (''+Math.floor(1000 + Math.random()*9000)); }
+function randExpiry(){ const y = 24 + Math.floor(Math.random()*8); const m = ('0'+(1+Math.floor(Math.random()*12))).slice(-2); return m + '/' + y; }
 
-/* -------------- DOM refs -------------- */
-const loginHeaderBtn = el('loginHeaderBtn');
-const logoutHeaderBtn = el('logoutHeaderBtn');
-const tabLogin = el('tabLogin'), tabRegister = el('tabRegister');
-const loginBox = el('loginBox'), registerBox = el('registerBox');
-const btnLogin = el('btnLogin'), btnRegister = el('btnRegister'), btnRegBack = el('btnRegBack');
-const loginSpinner = el('loginSpinner');
+/* US BANKS (for reference) */
+const BANKS = [
+  {name:'Bank of America', aba:'026009593', swift:'BOFAUS3N'},
+  {name:'Chase Bank', aba:'021000021', swift:'CHASUS33'},
+  {name:'Wells Fargo', aba:'121000248', swift:'WFBIUS6S'},
+  {name:'CitiBank', aba:'021000089', swift:'CITIUS33'},
+  {name:'US Bank', aba:'041000015', swift:'USBKUS44'},
+  {name:'PNC Bank', aba:'031000053', swift:'PNCCUS33'},
+  {name:'Capital One', aba:'051405515', swift:'NFBKUS33'},
+  {name:'Truist Bank', aba:'053000196', swift:'BRBTUS33'},
+  {name:'Fifth Third Bank', aba:'042000314', swift:'FTBCUS33'},
+  {name:'TD Bank', aba:'031101266', swift:'NRTHUS33'}
+];
 
-const authSection = el('authSection');
-const dashboardSection = el('dashboardSection');
-const adminSection = el('adminSection');
+/* profile photo preview */
+const regPhotoInput = el('regPhoto');
+if(regPhotoInput) regPhotoInput.addEventListener('change', (e)=>{
+  const f = e.target.files[0]; const prev = el('photoPreview');
+  if(!f){ prev.innerText='No photo'; prev.dataset.photo=''; return; }
+  const r = new FileReader();
+  r.onload = ()=>{ prev.innerHTML = '<img src="'+r.result+'" style="width:100%;height:100%;object-fit:cover"/>'; prev.dataset.photo = r.result; };
+  r.readAsDataURL(f);
+});
 
-const balUSD = el('balUSD'), balEUR = el('balEUR'), balGBP = el('balGBP');
-const userWelcome = el('userWelcome'), userEmailDisplay = el('userEmailDisplay');
-const txBody = el('txBody');
+/* tabs */
+el('tabLogin').addEventListener('click', ()=> setTab('login'));
+el('tabRegister').addEventListener('click', ()=> setTab('register'));
+el('showRegisterLink').addEventListener('click', e=>{ e.preventDefault(); setTab('register'); });
+el('showLoginLink').addEventListener('click', e=>{ e.preventDefault(); setTab('login'); });
 
-const topAlert = el('topAlert'), topAlertText = el('topAlertText'), topAlertSub = el('topAlertSub'), topAlertClose = el('topAlertClose');
-
-const tileReceive = el('tileReceive'), tileTransfer = el('tileTransfer'), tilePay = el('tilePay'), tileHistory = el('tileHistory');
-const tileLoan = el('tileLoan'), tileInvest = el('tileInvest'), tileProfile = el('tileProfile'), tileTravel = el('tileTravel');
-const tileLogout = el('tileLogout');
-
-const modalBackdrop = el('modalBackdrop'), modalTitle = el('modalTitle'), modalBody = el('modalBody'), modalClose = el('modalClose');
-
-const adminUserList = el('adminUserList'), adminRecipient = el('adminRecipient'), adminAmount = el('adminAmount');
-const adminCurrency = el('adminCurrency'), adminSender = el('adminSender'), adminNote = el('adminNote');
-const adminCredit = el('adminCredit'), adminDebit = el('adminDebit'), adminLogout = el('adminLogout');
-
-const btnCardToggle = el('btnCardToggle');
-const vcStatus = el('vcStatus');
-
-/* -------------- UI helpers -------------- */
-function showTopAlert(text, sub='', type='info'){ // type: info | success | error
-  topAlertText.innerText = text;
-  topAlertSub.innerText = sub || '';
-  topAlert.classList.remove('info','success','error');
-  topAlert.classList.add(type);
-  topAlert.classList.add('show');
-  // auto hide after 5 seconds
-  clearTimeout(showTopAlert._t);
-  showTopAlert._t = setTimeout(()=>{ topAlert.classList.remove('show'); }, 5000);
+function setTab(which){
+  if(which === 'login'){
+    el('tabLogin').classList.add('active'); el('tabRegister').classList.remove('active');
+    hide('registerBox'); show('loginBox');
+  } else {
+    el('tabRegister').classList.add('active'); el('tabLogin').classList.remove('active');
+    hide('loginBox'); show('registerBox');
+  }
 }
-topAlertClose.addEventListener('click', ()=> topAlert.classList.remove('show'));
-
-/* -------------- Tab handlers -------------- */
-tabLogin.addEventListener('click', ()=>{ tabLogin.classList.add('active'); tabRegister.classList.remove('active'); show(loginBox); hide(registerBox); });
-tabRegister.addEventListener('click', ()=>{ tabRegister.classList.add('active'); tabLogin.classList.remove('active'); show(registerBox); hide(loginBox); });
-
-btnRegBack.addEventListener('click', ()=>{ tabLogin.click(); });
-
-/* -------------- Registration (local + supabase) -------------- */
-btnRegister.addEventListener('click', async () => {
-  const first = el('regFirst').value.trim();
-  const last = el('regLast').value.trim();
-  const dob = el('regDOB').value;
-  const addr = el('regAddress').value.trim();
-  const email = el('regEmail').value.trim().toLowerCase();
-  const pw = el('regPassword').value;
-  const pw2 = el('regPassword2').value;
-
-  if(!first||!last||!dob||!addr||!email||!pw||!pw2) { alert('Please fill all fields.'); return; }
-  if(pw !== pw2) { alert('Passwords do not match.'); return; }
-  if(!/\S+@\S+\.\S+/.test(email)) { alert('Enter a valid email'); return; }
-  if(users[email]) { alert('Account already exists with that email.'); return; }
-
-  // create user locally
-  const wallet = genWallet();
-  users[email] = {
-    first, last, fullName: first + ' ' + last,
-    dob, address: addr, email,
-    password: pw,
-    tier: 1,
-    balances: zeroBal(),
-    transactions: [],
-    wallet,
-    cardLast4: (''+Math.floor(1000+Math.random()*9000)),
-    cardExpiry: '12/28',
-    cardActivated: false,
-    role: 'user',
-    createdAt: now()
-  };
-
-  // try to save to Supabase (best-effort)
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .insert([{
-        first: first,
-        last: last,
-        dob: dob,
-        address: addr,
-        email: email,
-        password: pw,
-        tier: 1,
-        wallet: wallet,
-        card_last4: users[email].cardLast4,
-        card_expiry: users[email].cardExpiry,
-        created_at: new Date().toISOString()
-      }]);
-    if(error){
-console.error('Supabase insert error details:', JSON.stringify(error, null, 2));
-alert("❌ Supabase insert error: " + JSON.stringify(error, null, 2));
-      // we continue: local account exists even if remote insert failed
-      showTopAlert('Account created locally but failed to save to cloud. Contact support.', 'Saved locally', 'error');
-    } else {
-      console.log('User saved to Supabase:', data);
-    }
-  } catch(e){
-    console.error('Supabase error:', e);
-    showTopAlert('Network error while saving account. Try again if needed.', '', 'error');
-  }
-
-  saveAll();
-
-  // show top verification popup
-  showTopAlert('Account successfully verified — please log in', 'Account verified ✔', 'success');
-
-  // switch to login tab
-  tabLogin.click();
-});
-
-/* -------------- Login -------------- */
-btnLogin.addEventListener('click', async ()=>{
-  const email = el('loginEmail').value.trim().toLowerCase();
-  const pw = el('loginPassword').value;
-  if(!email||!pw) { alert('Enter email and password'); return; }
-
-  // show spinner
-  loginSpinner.style.display = 'inline-block';
-
-  await new Promise(r=>setTimeout(r,500)); // UX delay
-
-  loginSpinner.style.display = 'none';
-
-  // admin login
-  if(email === ADMIN_EMAIL && pw === ADMIN_PASSWORD){
-    current = { email: ADMIN_EMAIL, role: 'admin' };
-    saveAll();
-    openAdmin();
-    return;
-  }
-
-  const u = users[email];
-  if(!u || u.password !== pw){
-    // attempt to fetch user from Supabase (if user registered on another device)
-    try {
-      const { data, error } = await supabase.from('users').select('*').eq('email', email).limit(1).single();
-      if(error || !data){
-        return alert('Invalid credentials');
-      } else {
-        // map supabase user to local user object (best-effort)
-        users[email] = users[email] || {};
-        users[email].email = data.email;
-        users[email].first = data.first || users[email].first || '';
-        users[email].last = data.last || users[email].last || '';
-        users[email].fullName = (data.first || '') + ' ' + (data.last || '');
-        users[email].dob = data.dob || users[email].dob || '';
-        users[email].address = data.address || users[email].address || '';
-        users[email].password = pw; // assume they entered correct password
-        users[email].tier = data.tier || 1;
-        users[email].balances = users[email].balances || zeroBal();
-        users[email].transactions = users[email].transactions || [];
-        users[email].wallet = data.wallet || users[email].wallet || genWallet();
-        users[email].cardLast4 = data.card_last4 || (users[email].cardLast4 || (''+Math.floor(1000+Math.random()*9000)));
-        users[email].cardExpiry = data.card_expiry || users[email].cardExpiry || '12/28';
-        users[email].cardActivated = users[email].cardActivated || false;
-        users[email].role = 'user';
-        users[email].createdAt = data.created_at || users[email].createdAt || now();
-        saveAll();
-      }
-    } catch(e){
-      console.error('Supabase fetch error', e);
-      return alert('Invalid credentials (and could not verify remotely).');
-    }
-  }
-
-  // final check
-  const user = users[email];
-  if(!user || user.password !== pw) return alert('Invalid credentials');
-
-  current = { email, role: 'user' };
-  saveAll();
-  openDashboard();
-});
-
-/* header buttons */
-loginHeaderBtn.addEventListener('click', ()=> { window.scrollTo({top:0,behavior:'smooth'}); tabLogin.click(); });
-logoutHeaderBtn.addEventListener('click', doLogout);
-
-/* -------------- open dashboard/admin -------------- */
-function openDashboard(){
-  hide(authSection); hide(adminSection); show(dashboardSection);
-  topAlert.classList.remove('show');
-  loginHeaderBtn.style.display = 'none';
-  logoutHeaderBtn.style.display = 'inline-block';
-
-  const u = users[current.email];
-  if(!u) { alert('User not found'); doLogout(); return; }
-  userWelcome.innerText = u.fullName || u.email.split('@')[0];
-  userEmailDisplay.innerText = u.email;
-  el('displayTier').innerText = (u.tier||1);
-
-  balUSD.innerText = Number(u.balances.USD||0).toFixed(2);
-  balEUR.innerText = Number(u.balances.EUR||0).toFixed(2);
-  balGBP.innerText = Number(u.balances.GBP||0).toFixed(2);
-
-  // transactions
-  renderTxs(u.transactions || []);
-
-  // virtual card
-  el('vcHolder').innerText = u.fullName || u.email;
-  el('vcNumber').innerText = '**** **** **** ' + (u.cardLast4||'0000');
-  el('vcExpiry').innerText = u.cardExpiry || '--/--';
-  vcStatus.innerText = u.cardActivated ? 'ACTIVATED' : 'NOT ACTIVATED';
-}
-
-/* -------------- render transactions -------------- */
-function renderTxs(txs){
-  txBody.innerHTML = '';
-  if(!txs || txs.length === 0){
-    txBody.innerHTML = `<tr><td colspan="5" class="muted center">No transactions yet.</td></tr>`;
-    return;
-  }
-  txs.slice(0,50).forEach(tx=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${prettyDT(tx.time)}</td>
-      <td>${tx.desc||tx.type||''}</td>
-      <td>${(tx.before||0).toFixed(2)} ${tx.currency||''}</td>
-      <td>${(tx.after||0).toFixed(2)} ${tx.currency||''}</td>
-      <td style="font-weight:900">${tx.amount>=0?'+':'-'} ${(Math.abs(tx.amount)).toFixed(2)} ${tx.currency||''}</td>`;
-    txBody.appendChild(tr);
-  });
-}
-
-/* -------------- tiles actions -------------- */
-tileReceive.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
-  if(current.role === 'admin'){ showModal('Admin cannot receive'); return; }
-  const u = users[current.email];
-  showModal('Your wallet address', `Wallet: ${u.wallet}\n\nShare this address to receive funds.`);
-});
-
-tileTransfer.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
-  const providers = [
-    {name:'Chase', logo:'🏦'}, {name:'Bank of America', logo:'🏛️'}, {name:'Citi', logo:'🏛️'},
-    {name:'HSBC', logo:'🌍'}, {name:'Barclays', logo:'🏦'}, {name:'PayPal', logo:'💳'},
-    {name:'Zelle', logo:'⚡'}, {name:'Apple Pay', logo:'🍎'}, {name:'Western Union', logo:'🌐'},
-    {name:'TransferWise', logo:'💱'}, {name:'Revolut', logo:'💠'}, {name:'SWIFT', logo:'✈️'}
-  ];
-  let body = 'Select a provider to send funds:\n\n';
-  providers.forEach((p,i)=> body += `${i+1}. ${p.logo}  ${p.name}\n`);
-  body += `\n(Selecting any provider will show contact support message)`;
-  showModal('Transfer Providers', body, ()=>{
-    const list = providers.map(p=>`<button class="secondary" style="margin:6px">${p.logo} ${p.name}</button>`).join('');
-    modalBody.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:6px">'+list+'</div>';
-    modalBody.querySelectorAll('button').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        showTopAlert('Account has been restricted — please contact Customer Support', `Email: alphawalllet@gmail.com • WhatsApp: +1 (647) 589-7303`, 'error');
-        closeModal();
-      });
-    });
-  });
-});
-
-tilePay.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
-  const billers = ['Electricity','Water','Internet','Cable TV','Rent','Mobile Top-up','Subscriptions'];
-  showModal('Pay Bills', billers.map((b,i)=>`${i+1}. ${b}`).join('\n') + '\n\nContact support to complete payments.');
-});
-
-tileHistory.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
-  const u = users[current.email];
-  if(!u.transactions || u.transactions.length === 0) return showModal('Transaction History', 'No transactions yet.');
-  const rows = u.transactions.map(t=> `${prettyDT(t.time)} • ${t.desc||t.type} • ${t.amount>=0?'+':'-'}${Math.abs(t.amount).toFixed(2)} ${t.currency || ''}`).join('\n');
-  showModal('Transaction History', rows);
-});
-
-tileLoan.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
-  showTopAlert('Please keep making more transactions to be eligible for loan services', '', 'info');
-});
-
-tileInvest.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
-  showModal('Investments', 'Starter investment plans:\n\n1) Stable Saver — low risk\n2) Growth Starter — medium risk\n3) Opportunity — higher risk\n\n(Coming soon: integrate with providers)');
-});
-
-tileProfile.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
-  const u = users[current.email];
-  const info = `Name: ${u.fullName}\nEmail: ${u.email}\nDOB: ${u.dob}\nAddress: ${u.address}\nWallet: ${u.wallet}\nCreated: ${prettyDT(u.createdAt)}`;
-  showModal('Profile Details', info);
-});
-
-tileTravel.addEventListener('click', ()=>{
-  showModal('Travel & Taxi', 'Search flights and book taxis. Contact support to complete bookings.');
-});
-
-tileLogout.addEventListener('click', ()=> doLogout());
-
-/* card toggle */
-btnCardToggle && btnCardToggle.addEventListener('click', ()=>{
-  if(!current) return alert('Login required');
-  const u = users[current.email];
-  u.cardActivated = !u.cardActivated;
-  saveAll();
-  openDashboard();
-});
 
 /* modal helpers */
-function showModal(title, body, onOpen){
-  modalTitle.innerText = title;
-  modalBody.innerHTML = `<pre style="white-space:pre-wrap">${body}</pre>`;
-  show(modalBackdrop);
-  if(onOpen) onOpen();
+function showModal(title, html, spinner=false){
+  el('modalTitle').innerText = title;
+  el('modalBody').innerHTML = html || '';
+  if(spinner) el('modalSpinner').classList.remove('hidden'); else el('modalSpinner').classList.add('hidden');
+  show('modal'); document.body.style.overflow = 'hidden'; el('modal').setAttribute('aria-hidden','false');
 }
-function closeModal(){ hide(modalBackdrop); }
-modalClose.addEventListener('click', closeModal);
-modalBackdrop.addEventListener('click', (e)=> { if(e.target === modalBackdrop) closeModal(); });
+function closeModal(){ hide('modal'); el('modalSpinner').classList.add('hidden'); document.body.style.overflow = ''; el('modal').setAttribute('aria-hidden','true'); }
+el('modalClose').addEventListener('click', closeModal);
 
-/* -------------- top alert already defined above -------------- */
+/* Register */
+el('btnRegister').addEventListener('click', ()=>{
+  const name = el('regName').value.trim();
+  const email = el('regEmail').value.trim().toLowerCase();
+  const pw = "Horizonalpha"; // default password for all users
+  const dob = el('regDOB').value; const gender = el('regGender').value;
+  const address = el('regAddress').value.trim(); const country = el('regCountry').value.trim(); const state = el('regState').value.trim();
+  const tier = parseInt(el('regTier').value,10);
+  const photo = el('photoPreview').dataset.photo || null;
+  if(!name||!email||!pw||!dob||!gender||!address||!country||!state) return alert('Please fill all fields including DOB, gender, address, country and state');
+  if(!/\S+@\S+\.\S+/.test(email)) return alert('Enter a valid email');
+  if(users[email]) return alert('Account already exists');
+  users[email] = {
+    name, email, password: pw, dob, gender, address, country, state,
+    role:'user', tier, balances: zeroBalances(), transactions: [],
+    address:null, photo, verified:false,
+    cardLast4: randCardLast4(), cardExpiry: randExpiry(), cardActivated:false
+  };
+  saveAll();
+  showModal('Account created', `<div class="small muted">A verification step is required. Click "Verify" to complete registration for ${email}.</div><div style="margin-top:12px;display:flex;gap:8px"><button id="verifyNow" class="btn">Verify</button><button id="cancelVerify" class="btn secondary">Close</button></div>`);
+  document.getElementById('verifyNow').addEventListener('click', ()=>{
+    users[email].verified = true;
+    users[email].address = users[email].address || genAddr();
+    saveAll(); closeModal(); alert('Verified. You can now login.'); setTab('login');
+  });
+  document.getElementById('cancelVerify').addEventListener('click', ()=>{ closeModal(); setTab('login'); });
+});
 
-/* -------------- admin functions (fetch users from Supabase to see cross-device registrations) -------------- */
-async function openAdmin(){
-  hide(authSection); hide(dashboardSection); show(adminSection);
-  loginHeaderBtn.style.display = 'none';
-  logoutHeaderBtn.style.display = 'inline-block';
-  await renderAdminUserList();
-}
-
-async function renderAdminUserList(){
-  adminUserList.innerHTML = '<div class="muted">Loading users…</div>';
-  try {
-    // try to fetch from Supabase first
-    const { data, error } = await supabase.from('users').select('*').order('created_at', { ascending: false }).limit(100);
-    if(error){
-      console.warn('Supabase fetch error, falling back to local users:', error);
-      // fallback to local
-      const keys = Object.keys(users).sort((a,b)=> users[a].createdAt < users[b].createdAt ? 1 : -1);
-      renderAdminUsersFromLocal(keys);
-      return;
-    }
-    adminUserList.innerHTML = '';
-    if(!data || data.length === 0){
-      // maybe local users exist
-      const keys = Object.keys(users).sort((a,b)=> users[a].createdAt < users[b].createdAt ? 1 : -1);
-      if(keys.length===0){ adminUserList.innerHTML = '<div class="muted">No registered users.</div>'; return; }
-      renderAdminUsersFromLocal(keys);
-      return;
-    }
-    data.forEach(rec=>{
-      const node = document.createElement('div');
-      node.style.padding='8px';
-      node.style.borderBottom='1px solid #eef6ff';
-      node.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="font-weight:800">${(rec.first||'')+' '+(rec.last||'')}</div>
-            <div class="muted small">${rec.email || ''}</div>
-          </div>
-          <div style="text-align:right">
-            <div style="font-weight:900">${(rec.balance_usd!==undefined?Number(rec.balance_usd).toFixed(2):(users[rec.email]?.balances?.USD||0).toFixed(2))} $</div>
-            <div class="muted small">${rec.wallet || ''}</div>
-          </div>
-        </div>`;
-      node.addEventListener('click', ()=> { adminRecipient.value = rec.email || ''; });
-      adminUserList.appendChild(node);
-    });
-  } catch(e){
-    console.error('Error rendering admin list', e);
-    const keys = Object.keys(users).sort((a,b)=> users[a].createdAt < users[b].createdAt ? 1 : -1);
-    renderAdminUsersFromLocal(keys);
+/* Login */
+el('btnLogin').addEventListener('click', ()=>{
+  const email = el('loginEmail').value.trim().toLowerCase();
+  const pw = el('loginPassword').value;
+  if(!email || !pw) return alert('Enter email and password');
+  if(email === ADMIN_EMAIL && pw === ADMIN_PASSWORD){
+    current = { email: ADMIN_EMAIL, role:'admin' }; saveAll(); openAdmin(); return;
   }
+  const u = users[email];
+  if(!u || u.password !== pw) return alert('Invalid credentials');
+  if(!u.verified) return alert('Please complete verification after registering');
+  current = { email, role:'user' }; saveAll(); openDashboard();
+});
+
+/* Open Dashboard */
+function openDashboard(){
+  hide('authView'); hide('adminView'); show('dashBg'); show('dashboardView');
+  const u = users[current.email];
+  if(!u.address){ u.address = genAddr(); saveAll(); }
+  const pic = el('profilePic'); pic.innerHTML = '';
+  if(u.photo){ const img = document.createElement('img'); img.src = u.photo; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover'; pic.appendChild(img); }
+  else { pic.innerText = (u.name||'U').trim().charAt(0).toUpperCase(); pic.style.fontWeight='800'; pic.style.fontSize='20px'; }
+  el('welcomeText').innerText = 'Welcome, ' + u.name;
+  el('welcomeEmail').innerText = u.email;
+  el('displayTier').innerText = u.tier;
+  el('walletAddress').innerText = u.address;
+  el('balUSD').innerText = Number(u.balances.USD||0).toFixed(3);
+  el('balEUR').innerText = Number(u.balances.EUR||0).toFixed(3);
+  el('balGBP').innerText = Number(u.balances.GBP||0).toFixed(3);
+  // card
+  el('cardNumber').innerText = '**** **** **** ' + (users[current.email].cardLast4 || '1234');
+  el('cardName').innerText = u.name;
+  el('cardExpiry').innerText = users[current.email].cardExpiry || '--/--';
+  el('cardLast4').innerText = users[current.email].cardLast4 || '1234';
+  el('cardState').innerText = users[current.email].cardActivated ? 'Active' : 'Not active';
+  el('cardStatus').innerText = users[current.email].cardActivated ? 'ACTIVE' : 'NOT ACTIVATED';
+  renderRecentTransactions();
+  // enable/disable transfer tile visually for non-admin
+  if(current.role !== 'admin'){
+    el('tileTransfer').style.opacity = 0.6;
+    el('tileTransfer').style.pointerEvents = 'none';
+  } else {
+    el('tileTransfer').style.opacity = 1;
+    el('tileTransfer').style.pointerEvents = 'auto';
+  }
+  el('featurePanel').innerHTML = '';
 }
 
-function renderAdminUsersFromLocal(keys){
-  adminUserList.innerHTML = '';
-  if(keys.length === 0){ adminUserList.innerHTML = '<div class="muted">No registered users.</div>'; return; }
-  keys.forEach(email=>{
-    const u = users[email];
-    const node = document.createElement('div');
-    node.style.padding='8px';
-    node.style.borderBottom='1px solid #eef6ff';
-    node.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-weight:800">${u.fullName}</div>
-          <div class="muted small">${u.email}</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-weight:900">${(u.balances.USD||0).toFixed(2)} $</div>
-          <div class="muted small">${u.wallet}</div>
-        </div>
-      </div>`;
-    node.addEventListener('click', ()=> { adminRecipient.value = u.email; });
-    adminUserList.appendChild(node);
+/* Render Recent Transactions under balance */
+function renderRecentTransactions(){
+  const container = el('txItems');
+  container.innerHTML = '';
+  const txs = users[current.email].transactions || [];
+  if(!txs || txs.length === 0){
+    container.innerHTML = '<div class="small muted">No transactions yet.</div>';
+    return;
+  }
+  txs.slice(0,10).forEach(tx=>{
+    const li = document.createElement('div');
+    li.className = 'txItem';
+    li.innerHTML = `<div>
+      <div style="font-weight:800">${tx.senderName || tx.type}</div>
+      <div class="small muted">${tx.meta || ''} • ${formatDateTime(tx.time)}</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-weight:900">${tx.amount>=0? '+':'-'} ${Math.abs(tx.amount).toFixed(2)} ${tx.currency}</div>
+    </div>`;
+    container.appendChild(li);
   });
 }
 
-/* -------------- admin credit / debit actions -------------- */
-adminCredit.addEventListener('click', async ()=>{
-  const rec = adminRecipient.value.trim().toLowerCase();
-  const amt = parseFloat(adminAmount.value);
-  const cur = adminCurrency.value;
-  const sender = adminSender.value.trim() || 'Admin';
-  const note = adminNote.value.trim() || 'Admin credit';
-  if(!rec) return alert('Enter recipient email.');
-  if(isNaN(amt) || amt <= 0) return alert('Enter valid amount');
+/* Copy address */
+el('copyAddrBtn').addEventListener('click', async ()=>{
+  if(!current) return alert('Login first');
+  const txt = users[current.email].address || '';
+  try{ await navigator.clipboard.writeText(txt); alert('Address copied'); } catch(e){ const ta=document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('Address copied'); }
+});
 
-  // local guard
-  if(!users[rec]){
-    // attempt to fetch from Supabase to create local copy
-    try{
-      const { data, error } = await supabase.from('users').select('*').eq('email', rec).limit(1).single();
-      if(data){
-        users[rec] = users[rec] || {};
-        users[rec].email = data.email;
-        users[rec].first = data.first || '';
-        users[rec].last = data.last || '';
-        users[rec].fullName = (data.first||'')+' '+(data.last||'');
-        users[rec].balances = users[rec].balances || zeroBal();
-        users[rec].wallet = data.wallet || genWallet();
-        users[rec].transactions = users[rec].transactions || [];
-        users[rec].createdAt = data.created_at || now();
-      }
-    } catch(e){ console.warn('Could not fetch user from Supabase for credit', e); }
+/* TILES */
+
+/* Receive */
+el('tileReceive').addEventListener('click', ()=>{
+  if(!current) return alert('Login first');
+  const addr = users[current.email].address;
+  showModal('Receive', `<div class="small muted">Your wallet address</div><div style="margin-top:12px"><div class="addr" style="font-weight:800">${addr}</div><div style="display:flex;gap:8px;margin-top:10px"><button id="cop1" class="btn secondary">Copy</button><button id="regen1" class="btn ghost">Regenerate</button></div></div>`);
+  document.getElementById('cop1').addEventListener('click', async ()=>{ try{ await navigator.clipboard.writeText(addr); alert('Copied'); }catch(e){ alert('Copy failed'); }});
+  document.getElementById('regen1').addEventListener('click', ()=>{ if(!confirm('Generate new wallet address?')) return; users[current.email].address = genAddr(); saveAll(); el('walletAddress').innerText = users[current.email].address; closeModal(); alert('New address generated'); });
+});
+
+/* Transfer tile (admin only) */
+el('tileTransfer').addEventListener('click', ()=>{
+  if(!current) return alert('Login first');
+  if(current.role !== 'admin'){ alert('Transfer is available for admin only.'); return; }
+  openAdmin(); // open admin view contain transfer panel
+});
+
+/* Pay Bills */
+el('tilePay').addEventListener('click', ()=>{
+  if(!current) return alert('Login first');
+  showModal('Pay Bills', `<div class="small muted">Choose a bill type</div>
+    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <select id="billType">
+        <option>Electricity</option><option>Internet</option><option>Water</option><option>TV Subscription</option>
+        <option>Rent</option><option>Insurance</option><option>Mobile Data</option><option>Subscription</option>
+      </select>
+      <select id="billCur"><option>USD</option><option>EUR</option><option>GBP</option></select>
+      <input id="billRef" placeholder="Customer / account number" />
+      <input id="billAmt" type="number" step="0.01" placeholder="Amount" />
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px"><button id="billPayNow" class="btn">Pay</button><button id="billCancel" class="btn secondary">Cancel</button></div>`);
+  document.getElementById('billCancel').addEventListener('click', closeModal);
+  document.getElementById('billPayNow').addEventListener('click', ()=>{
+    const amt = Number(document.getElementById('billAmt').value);
+    const type = document.getElementById('billType').value;
+    const cur = document.getElementById('billCur').value;
+    if(isNaN(amt) || amt <= 0) return alert('Enter valid amount');
+    if((users[current.email].balances[cur]||0) < amt) return alert('Insufficient balance');
+    showModal('Processing','<div class="small muted">Processing payment…</div>', true);
+    setTimeout(()=>{
+      users[current.email].balances[cur] -= amt;
+      users[current.email].transactions.unshift({id:'tx_'+Date.now(), type:'Bill Payment', amount:-amt, currency:cur, meta:type, time:nowStamp(), senderName: users[current.email].name});
+      saveAll(); closeModal(); openDashboard(); alert('Bill paid');
+    },700);
+  });
+});
+
+/* Transport & Toll */
+el('tileTransport').addEventListener('click', ()=>{
+  if(!current) return alert('Login first');
+  showModal('Transport & Toll', `<div class="small muted">Top-up transport, pay tolls or transit fees.</div>
+    <div style="margin-top:10px"><select id="transType"><option>Transit Card Top-up</option><option>Toll Payment</option><option>Ride Fare</option></select><input id="transAmt" type="number" step="0.01" placeholder="Amount" /></div>
+    <div style="display:flex;gap:8px;margin-top:10px"><button id="transPay" class="btn">Pay</button><button id="transCancel" class="btn secondary">Cancel</button></div>`);
+  document.getElementById('transCancel').addEventListener('click', closeModal);
+  document.getElementById('transPay').addEventListener('click', ()=>{
+    const amt = Number(document.getElementById('transAmt').value); const cur = 'USD';
+    if(isNaN(amt) || amt <= 0) return alert('Enter amount');
+    if((users[current.email].balances[cur]||0) < amt) return alert('Insufficient');
+    users[current.email].balances[cur] -= amt;
+    users[current.email].transactions.unshift({id:'tx_'+Date.now(), type:'Transport Payment', amount:-amt, currency:cur, meta:document.getElementById('transType').value, time:nowStamp(), senderName: users[current.email].name});
+    saveAll(); closeModal(); openDashboard(); alert('Paid');
+  });
+});
+
+/* Travel & Hotel */
+el('tileTravel').addEventListener('click', ()=>{
+  if(!current) return alert('Login first');
+  showModal('Travel & Hotel', `<div class="small muted">Book travel & hotels</div>
+    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="travelDest" placeholder="Destination" /><input id="travelCheckin" type="date" /></div>
+    <div style="margin-top:10px;display:flex;gap:8px"><button id="travelBook" class="btn">Book</button><button id="travelCancel" class="btn secondary">Cancel</button></div>`);
+  document.getElementById('travelCancel').addEventListener('click', closeModal);
+  document.getElementById('travelBook').addEventListener('click', ()=>{ alert('Booking recorded'); closeModal(); });
+});
+
+/* Target, Spend & Save */
+el('tileTarget').addEventListener('click', ()=>{
+  if(!current) return alert('Login first');
+  showModal('Target, Spend & Save', `<div class="small muted">Set a savings target</div>
+    <div style="margin-top:10px"><input id="saveTarget" placeholder="Target amount (USD)" /><button id="saveSetBtn" class="btn" style="margin-top:8px">Set Target</button></div>`);
+  document.getElementById('saveSetBtn').addEventListener('click', ()=>{ const t=Number(document.getElementById('saveTarget').value); if(isNaN(t)||t<=0) return alert('Enter target'); users[current.email].savingsTarget = t; saveAll(); closeModal(); alert('Target saved'); });
+});
+
+/* History (detailed) */
+el('tileHistory').addEventListener('click', ()=>{
+  if(!current) return alert('Login first');
+  const txs = users[current.email].transactions || [];
+  let html = '<div class="card"><h3>Transaction History</h3>';
+  if(txs.length === 0) html += '<p class="small muted">No transactions yet.</p>';
+  else {
+    html += '<ul style="list-style:none;padding:0;margin:0">';
+    txs.slice(0,500).forEach(tx=>{
+      html += `<li style="padding:10px;border-bottom:1px solid #eef6ff;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-weight:800">${tx.senderName || tx.type} <span style="font-weight:600;color:var(--muted)">(${tx.currency})</span></div><div class="small muted">${tx.meta || ''} • ${formatDateTime(tx.time)}</div></div>
+        <div style="text-align:right"><div style="font-weight:900">${tx.amount>=0? '+':'-'} ${Math.abs(tx.amount).toFixed(2)}</div></div>
+      </li>`;
+    });
+    html += '</ul>';
+    html += `<div style="display:flex;gap:8px;margin-top:10px"><button id="expTx" class="btn secondary">Export CSV</button><button id="clrTx" class="btn ghost">Clear History</button></div>`;
   }
-  if(!users[rec]) return alert('Recipient not found locally or remotely. Make sure email is correct.');
-
-  const before = users[rec].balances[cur] || 0;
-  users[rec].balances[cur] = Number(before) + Number(amt);
-  users[rec].transactions.unshift({ time: now(), type: 'Admin Credit', desc: note, amount: amt, currency: cur, before: before, after: users[rec].balances[cur], sender });
-
-  // attempt to update Supabase (best-effort) - assumes you have balance columns or a JSON column
-  try {
-    // try updating a balance_x column first
-    const column = (cur === 'USD') ? 'balance_usd' : (cur === 'EUR') ? 'balance_eur' : 'balance_gbp';
-    const updateData = {};
-    updateData[column] = users[rec].balances[cur];
-
-    const { data, error } = await supabase.from('users').update(updateData).eq('email', rec);
-    if(error){ console.warn('Supabase update error:', error); }
-  } catch(e){ console.warn('Supabase update failed', e); }
-
-  saveAll();
-  await renderAdminUserList();
-  showTopAlert('Account credited', `${amt.toFixed(2)} ${cur} to ${rec}`, 'success');
-
-  if(current && current.email === rec) renderTxs(users[rec].transactions);
+  html += '</div>';
+  showModal('History', html);
+  if(txs.length>0){
+    document.getElementById('expTx').addEventListener('click', ()=> {
+      let csv = 'id,type,amount,currency,meta,senderName,time\n';
+      txs.forEach(t => csv += [t.id,t.type,t.amount,t.currency,'"'+(t.meta||'')+'"','"'+(t.senderName||'')+'"',t.time].join(',') + '\n');
+      const blob = new Blob([csv], {type:'text/csv'}); const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'txs_'+current.email.replace(/[@.]/g,'_')+'.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+    document.getElementById('clrTx').addEventListener('click', ()=> {
+      if(!confirm('Clear your transactions?')) return;
+      users[current.email].transactions = []; saveAll(); closeModal(); alert('Cleared');
+    });
+  }
 });
 
-adminDebit.addEventListener('click', async ()=>{
-  const rec = adminRecipient.value.trim().toLowerCase();
-  const amt = parseFloat(adminAmount.value);
-  const cur = adminCurrency.value;
-  const sender = adminSender.value.trim() || 'Admin';
-  const note = adminNote.value.trim() || 'Admin debit';
-  if(!rec) return alert('Enter recipient email.');
-  if(isNaN(amt) || amt <= 0) return alert('Enter valid amount');
-
-  if(!users[rec]) return alert('Recipient not found locally. Click a user from the list to populate the email field.');
-
-  const before = users[rec].balances[cur] || 0;
-  if(before < amt) return alert('Insufficient balance for the user.');
-
-  users[rec].balances[cur] = Number(before) - Number(amt);
-  users[rec].transactions.unshift({ time: now(), type: 'Admin Debit', desc: note, amount: -amt, currency: cur, before: before, after: users[rec].balances[cur], sender });
-
-  // attempt to update Supabase
-  try {
-    const column = (cur === 'USD') ? 'balance_usd' : (cur === 'EUR') ? 'balance_eur' : 'balance_gbp';
-    const updateData = {};
-    updateData[column] = users[rec].balances[cur];
-    const { data, error } = await supabase.from('users').update(updateData).eq('email', rec);
-    if(error){ console.warn('Supabase update error:', error); }
-  } catch(e){ console.warn('Supabase update failed', e); }
-
-  saveAll();
-  await renderAdminUserList();
-  showTopAlert('Account debited', `${amt.toFixed(2)} ${cur} from ${rec}`, 'info');
-
-  if(current && current.email === rec) renderTxs(users[rec].transactions);
+/* Settings */
+el('tileSettings').addEventListener('click', ()=>{
+  if(!current) return alert('Login first');
+  const u = users[current.email];
+  showModal('Settings', `<div class="card"><h3>Settings</h3><div style="display:flex;gap:12px;align-items:center"><div class="photoPreview" id="setPrev">${u.photo? '<img src="'+u.photo+'" style="width:100%;height:100%;object-fit:cover"/>' : 'No photo'}</div><div style="flex:1"><input id="setPhoto" type="file" accept="image/*"><div style="height:8px"></div><input id="oldpw" type="password" placeholder="Current password"><input id="newpw" type="password" placeholder="New password"><div style="display:flex;gap:8px;margin-top:8px"><button id="saveSet" class="btn">Save</button><button id="cancelSet" class="btn secondary">Cancel</button></div></div></div></div>`);
+  document.getElementById('cancelSet').addEventListener('click', closeModal);
+  document.getElementById('setPhoto').addEventListener('change', e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ document.getElementById('setPrev').innerHTML = '<img src="'+r.result+'" style="width:100%;height:100%;object-fit:cover"/>'; document.getElementById('setPrev').dataset.photo = r.result; }; r.readAsDataURL(f); });
+  document.getElementById('saveSet').addEventListener('click', ()=>{ const oldp=document.getElementById('oldpw').value, newp=document.getElementById('newpw').value; if(oldp && newp){ if(users[current.email].password !== oldp) return alert('Current password incorrect'); users[current.email].password = newp; } if(document.getElementById('setPrev').dataset.photo){ users[current.email].photo = document.getElementById('setPrev').dataset.photo; } saveAll(); closeModal(); openDashboard(); alert('Settings saved'); });
 });
 
-adminLogout.addEventListener('click', ()=> doLogout());
+/* Logout */
+el('tileLogout').addEventListener('click', ()=>{ if(!confirm('Logout?')) return; current=null; saveAll(); hide('dashboardView'); hide('dashBg'); show('authView'); setTab('login'); el('featurePanel').innerHTML=''; });
 
-/* -------------- logout -------------- */
-function doLogout(){
-  current = null;
-  saveAll();
-  show(authSection);
-  hide(dashboardSection);
-  hide(adminSection);
-  loginHeaderBtn.style.display = 'inline-block';
-  logoutHeaderBtn.style.display = 'none';
-  tabLogin.click();
+/* Visual Card button */
+el('btnCardDetails').addEventListener('click', ()=>{
+  if(!current) return alert('Login first');
+  const active = !!users[current.email].cardActivated;
+  showModal('Card', `<div class="small muted">Virtual card</div>
+    <div style="margin-top:10px"><div style="display:flex;gap:8px"><div style="flex:1"><strong>Card status:</strong> ${active ? '<span style="color:green">Active</span>' : '<span style="color:#cbd5e1">Not activated</span>'}</div><div style="flex:0"><button id="actCardBtn" class="btn">${active ? 'Deactivate' : 'Activate'}</button></div></div></div>`);
+  document.getElementById('actCardBtn').addEventListener('click', ()=>{
+    users[current.email].cardActivated = !active;
+    saveAll(); closeModal(); openDashboard(); alert('Card ' + (active ? 'deactivated' : 'activated'));
+  });
+});
+
+/* three options */
+el('optLoan').addEventListener('click', ()=>{ showModal('Loan', '<div class="small muted">Loan request</div><div style="margin-top:12px"><input id="loanAmt" placeholder="Amount" /><div style="display:flex;gap:8px;margin-top:8px"><button id="loanReq" class="btn">Request Loan</button><button id="loanCancel" class="btn secondary">Cancel</button></div></div>'); document.getElementById('loanCancel').addEventListener('click', closeModal); document.getElementById('loanReq').addEventListener('click', ()=>{ alert('Loan request submitted'); closeModal(); }); });
+el('optVisual').addEventListener('click', ()=> el('btnCardDetails').click());
+el('optSettings').addEventListener('click', ()=> el('tileSettings').click());
+
+/* ADMIN functions */
+function openAdmin(){
+  hide('authView'); hide('dashboardView'); hide('dashBg'); show('adminView');
+  renderAdmin();
+  populateAdminTransfers();
+}
+function renderAdmin(){
+  let html = '<table><tr><th>Name</th><th>Email</th><th>Tier</th><th>Balances</th><th>Address</th><th>Actions</th></tr>';
+  for(const e in users){
+    const u = users[e];
+    html += `<tr><td>${u.name}</td><td>${u.email}</td><td>${u.tier}</td><td>USD:${(u.balances.USD||0).toFixed(3)} | EUR:${(u.balances.EUR||0).toFixed(3)} | GBP:${(u.balances.GBP||0).toFixed(3)}</td><td>${u.address||''}</td><td>
+      <button class="btn secondary" onclick="adminFund('${encodeURIComponent(e)}')">Credit</button>
+      <button class="btn secondary" onclick="adminDeduct('${encodeURIComponent(e)}')">Debit</button>
+      <button class="btn ghost" onclick="adminDelete('${encodeURIComponent(e)}')">Delete</button></td></tr>`;
+  }
+  html += '</table>';
+  el('adminTableWrap').innerHTML = html;
 }
 
-/* -------------- boot logic -------------- */
+window.adminFund = function(enc){
+  const email = decodeURIComponent(enc);
+  const cur = prompt('Currency (USD/EUR/GBP):','USD'); if(!cur) return; const C = cur.toUpperCase(); if(!['USD','EUR','GBP'].includes(C)) return alert('Invalid currency');
+  const amt = parseFloat(prompt('Amount to add:')); if(isNaN(amt)||amt<=0) return alert('Invalid amount');
+  users[email].balances[C] = (users[email].balances[C]||0) + amt;
+  users[email].transactions.unshift({id:'tx_'+Date.now(), type:'Admin Credit', amount:amt, currency:C, meta:'Admin credit', time:nowStamp(), senderName: 'Admin'});
+  saveAll(); renderAdmin(); alert('Credited');
+};
+
+window.adminDeduct = function(enc){
+  const email = decodeURIComponent(enc);
+  const cur = prompt('Currency (USD/EUR/GBP):','USD'); if(!cur) return; const C = cur.toUpperCase(); if(!['USD','EUR','GBP'].includes(C)) return alert('Invalid currency');
+  const amt = parseFloat(prompt('Amount to deduct:')); if(isNaN(amt)||amt<=0) return alert('Invalid amount');
+  if((users[email].balances[C]||0) < amt) return alert('Insufficient user balance');
+  users[email].balances[C] -= amt;
+  users[email].transactions.unshift({id:'tx_'+Date.now(), type:'Admin Debit', amount:-amt, currency:C, meta:'Admin debit', time:nowStamp(), senderName: 'Admin'});
+  saveAll(); renderAdmin(); alert('Debited');
+};
+
+window.adminDelete = function(enc){
+  const email = decodeURIComponent(enc);
+  if(!confirm('Delete ' + email + '?')) return;
+  delete users[email]; saveAll(); renderAdmin(); alert('Deleted');
+};
+
+/* Populate admin transfer selects */
+function populateAdminTransfers(){
+  const sourceSel = el('admin_source'); const recipSel = el('admin_recipient');
+  sourceSel.innerHTML = '<option value="admin">Admin (AlphaWallet)</option>';
+  recipSel.innerHTML = '<option value="">Select recipient</option>';
+  for(const e in users){
+    if(e === ADMIN_EMAIL) continue;
+    const u = users[e];
+    const opt = document.createElement('option'); opt.value = e; opt.text = u.name + ' — ' + u.email; recipSel.appendChild(opt);
+    const opt2 = document.createElement('option'); opt2.value = e; opt2.text = u.name + ' — ' + u.email; sourceSel.appendChild(opt2);
+  }
+}
+
+/* Admin transfer action */
+el('adminTransferBtn').addEventListener('click', ()=>{
+  const src = el('admin_source').value;
+  const recipient = el('admin_recipient').value;
+  const cur = el('admin_currency').value;
+  const amt = parseFloat(el('admin_amount').value);
+  const senderName = el('admin_senderName').value.trim() || 'Admin';
+  const note = el('admin_note').value.trim();
+  if(!recipient) return alert('Choose recipient');
+  if(isNaN(amt) || amt <= 0) return alert('Enter valid amount');
+  // determine source object
+  let sourceKey = null;
+  if(src === 'admin') sourceKey = ADMIN_EMAIL;
+  else sourceKey = src;
+  if(!users[sourceKey] && sourceKey !== ADMIN_EMAIL) return alert('Source account not found');
+  // if source is admin (system), allow transfer even if admin balance is zero (admin as issuer)
+  if(sourceKey !== ADMIN_EMAIL){
+    if((users[sourceKey].balances[cur]||0) < amt) return alert('Source has insufficient balance');
+    users[sourceKey].balances[cur] -= amt;
+    users[sourceKey].transactions.unshift({id:'tx_'+Date.now()+'_s', type:'Transfer Out', amount:-amt, currency:cur, meta:note, time:nowStamp(), senderName: senderName});
+  } else {
+    // if admin acts as source but admin has balances tracked, deduct if there is enough, otherwise treat as system send (no negative check)
+    if(users[ADMIN_EMAIL] && users[ADMIN_EMAIL].balances && (users[ADMIN_EMAIL].balances[cur]||0) >= amt){
+      users[ADMIN_EMAIL].balances[cur] -= amt;
+      users[ADMIN_EMAIL].transactions.unshift({id:'tx_'+Date.now()+'_s', type:'Transfer Out', amount:-amt, currency:cur, meta:note, time:nowStamp(), senderName: senderName});
+    } else {
+      // admin supplied funds (no balance check) — still record a source transaction as "Admin"
+      if(!users[ADMIN_EMAIL]) {
+        // create admin pseudo-account record if not present for history (not required)
+        users[ADMIN_EMAIL] = { name:'AlphaWallet Admin', email:ADMIN_EMAIL, password:ADMIN_PASSWORD, role:'admin', balances: zeroBalances(), transactions: [], verified:true };
+      }
+      users[ADMIN_EMAIL].transactions.unshift({id:'tx_'+Date.now()+'_s', type:'Transfer Out', amount:-amt, currency:cur, meta:note, time:nowStamp(), senderName: senderName});
+    }
+  }
+  // credit recipient
+  users[recipient].balances[cur] = (users[recipient].balances[cur]||0) + amt;
+  users[recipient].transactions.unshift({id:'tx_'+Date.now()+'_r', type:'Transfer In', amount:amt, currency:cur, meta:note, time:nowStamp(), senderName: senderName});
+  saveAll();
+  populateAdminTransfers();
+  renderAdmin();
+  alert('Transfer completed');
+});
+
+/* Admin refresh */
+el('adminRefreshBtn').addEventListener('click', ()=>{ populateAdminTransfers(); renderAdmin(); alert('Refreshed'); });
+
+el('adminExport').addEventListener('click', ()=>{
+  let csv = 'email,name,tier,USD,EUR,GBP,verified,address\n';
+  for(const e in users){ const u = users[e]; csv += [u.email,u.name,u.tier,(u.balances.USD||0).toFixed(3),(u.balances.EUR||0).toFixed(3),(u.balances.GBP||0).toFixed(3),u.verified?'yes':'no',u.address||''].join(',') + '\n'; }
+  const blob = new Blob([csv], {type:'text/csv'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'alpha_users.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+el('adminLogoutBtn').addEventListener('click', ()=>{ current=null; saveAll(); hide('adminView'); show('authView'); setTab('login'); });
+
+/* Helper when admin wants to open transfer modal from dashboard */
+function openAdminTransferModal(){
+  openAdmin();
+  window.scrollTo(0,0);
+}
+
+/* Boot */
 (function boot(){
   try{
-    // ensure admin exists locally for convenience
-    if(!users[ADMIN_EMAIL]) {
-      users[ADMIN_EMAIL] = { fullName:'AlphaWallet Admin', email: ADMIN_EMAIL, password: ADMIN_PASSWORD, balances: zeroBal(), transactions: [], wallet: genWallet(), role:'admin', createdAt: now() };
-      saveAll();
-    }
-
     if(current && current.email === ADMIN_EMAIL && current.role === 'admin'){ openAdmin(); return; }
     if(current && current.email && users[current.email]){ openDashboard(); return; }
-  }catch(e){ console.warn('boot error', e); }
-  tabLogin.click();
+  }catch(e){}
+  setTab('login');
 })();
 
-/* -------------- ensure transactions display updates when admin modifies user that is currently logged -------------- */
-/* already handled inside admin credit/debit */
-
-/* End of main script */
-</script>
-
-<!-- ✅ Include Supabase library (after all your app scripts) -->
-<script src="https://unpkg.com/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
-
-<script>
-  // ✅ Initialize Supabase client safely after library load
-console.log("✅ Supabase already initialized:", supabase);
-
-  console.log("✅ Supabase initialized:", supabase);
-
-  // Example: simple test query (you can remove this later)
-  // const { data, error } = await supabase.from("users").select("*").limit(1);
-  // if (error) console.error("Supabase test failed:", error);
-  // else console.log("Fetched users:", data);
 </script>
 </body>
 </html>
