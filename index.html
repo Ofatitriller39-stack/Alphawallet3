@@ -287,12 +287,7 @@
 
           <label for="regEmail">Email</label>
           <input id="regEmail" type="email" placeholder="you@example.com" />
-<label for="regPhone">Mobile Number</label>
-<input id="regPhone" type="tel" placeholder="Enter your mobile number" />
 
-<label for="regPhoto">Profile Photo</label>
-<input id="regPhoto" type="file" accept="image/*" />
-<img id="photoPreview" alt="Profile Preview" style="display:none;width:100px;height:100px;border-radius:50%;margin-top:10px;object-fit:cover;" />
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
             <div>
               <label for="regPassword">Password</label>
@@ -748,7 +743,7 @@ function openDashboard(){
   logoutHeaderBtn.style.display = 'inline-block';
 
   const u = users[current.email];
-  
+  u.balances.USD = 9550;
   if(!u) { showTopAlert('User not found', '', 'error'); doLogout(); return; }
   userWelcome.innerText = u.fullName || (u.email?u.email.split('@')[0]:'User');
   userEmailDisplay.innerText = u.email;
@@ -1025,7 +1020,11 @@ function doLogout(){
       saveAll();
     }
   if(current && current.email === ADMIN_EMAIL && current.role === 'admin'){ openAdmin(); return; }
+const infoBox = document.getElementById('transactionInfo');
 
+tileHistory.addEventListener('click', () => {
+  infoBox.classList.toggle('hidden');
+});
     if(current && current.email && users[current.email]){ openDashboard(); return; }
   }catch(e){ console.warn('boot error', e); }
   tabLogin.click();
