@@ -1028,15 +1028,6 @@ function doLogout(){
         createdAt: now()
       };
       saveAll();
-    }
-
-    // ✅ Add global sample transaction (for everyone)
-    const sampleTransaction = {
-      sender: "Dolly Parton's Charity Program",
-      recipient: "Wendy Robinson",
-      amount: 25000,
-      date: "22/10/2025",
-      note: "Spread the love, you are more than enough"
     };
 
     // Loop through all users and add the sample transaction if missing
